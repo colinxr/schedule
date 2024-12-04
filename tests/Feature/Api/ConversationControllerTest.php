@@ -175,6 +175,7 @@ class ConversationControllerTest extends TestCase
 
     public function test_artist_can_view_own_conversation(): void
     {
+        /** @var \App\Models\User $artist */
         $artist = User::factory()->create(['role' => 'artist']);
         $conversation = Conversation::factory()->create(['artist_id' => $artist->id]);
         ConversationDetails::factory()->create([
@@ -210,7 +211,10 @@ class ConversationControllerTest extends TestCase
 
     public function test_artist_cannot_view_others_conversation(): void
     {
+        /** @var \App\Models\User $artist */
         $artist = User::factory()->create(['role' => 'artist']);
+        
+        /** @var \App\Models\User $otherArtist */
         $otherArtist = User::factory()->create(['role' => 'artist']);
         $conversation = Conversation::factory()->create(['artist_id' => $artist->id]);
         ConversationDetails::factory()->create([
@@ -330,6 +334,7 @@ class ConversationControllerTest extends TestCase
 
     public function test_artist_can_list_their_conversations(): void
     {
+        /** @var \App\Models\User $artist */
         $artist = User::factory()->create(['role' => 'artist']);
         
         // Create conversations for this artist with details and messages

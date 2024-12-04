@@ -29,7 +29,7 @@ class ConversationResource extends JsonResource
             'latest_message' => $this->when($this->messages->isNotEmpty(), function () {
                 $message = $this->messages->first();
                 return [
-                    'content' => \Str::limit($message->content, 250),
+                    'content' => Str::limit($message->content, 250),
                     'created_at' => $message->created_at,
                     'read_at' => $message->read_at,
                 ];
