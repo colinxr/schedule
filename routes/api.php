@@ -13,5 +13,6 @@ use App\Http\Controllers\Api\ConversationController;
 Route::post('conversations', [ConversationController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('conversations', [ConversationController::class, 'index']);
     Route::get('conversations/{id}', [ConversationController::class, 'show']);
 });

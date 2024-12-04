@@ -15,6 +15,18 @@ class ConversationController extends Controller
         private ConversationService $conversationService
     ) {}
 
+    public function index()
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $conversations = $this->conversationService->getArtistConversations(Auth::id());
+        return ConversationResource::collection($conversations);
+    }
+
     public function store(StoreConversationRequest $request)
     {
         try {

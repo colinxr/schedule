@@ -6,6 +6,7 @@ use App\Events\ConversationCreated;
 use App\Models\Conversation;
 use App\Models\ConversationDetails;
 use App\Models\User;
+use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -325,5 +326,80 @@ class ConversationControllerTest extends TestCase
         
         // Verify events were dispatched
         Event::assertDispatched(ConversationCreated::class, 3);
+    }
+
+    public function test_artist_can_list_their_conversations(): void
+    {
+        $artist = User::factory()->create(['role' => 'artist']);
+        
+        // Create 3 conversations for this artist with messages
+        $conversations = Conversation::factory()
+            ->count(3)
+            ->create(['artist_id' => $artist->id]);
+            
+        foreach ($conversations as $conversation) {
+            ConversationDetails::factory()->create([
+                'conversation_id' => $conversation->id,
+                'email' => fake()->email(),
+                'description' => fake()->sentence(),
+            ]);
+            
+            // Create multiple messages for each conversation
+            Message::factory()->create([
+                'conversation_id' => $conversation->id,
+                'user_id' => $artist->id,
+                'content' => 'Latest message for conversation ' . $conversation->id,
+                'created_at' => now(),
+            ]);
+            
+            Message::factory()->create([
+                'conversation_id' => $conversation->id,
+                'user_id' => $artist->id,
+                'content' => 'Older message',
+                'created_at' => now()->subHour(),
+            ]);
+        }
+        
+        // Create a conversation for another artist
+        $otherConversation = Conversation::factory()
+            ->create(['artist_id' => User::factory()->create(['role' => 'artist'])->id]);
+        ConversationDetails::factory()->create([
+            'conversation_id' => $otherConversation->id,
+            'email' => fake()->email(),
+            'description' => fake()->sentence(),
+        ]);
+        Message::factory()->create([
+            'conversation_id' => $otherConversation->id,
+            'content' => 'This should not appear',
+        ]);
+
+        $this->actingAs($artist);
+        $response = $this->getJson('/api/conversations');
+
+        $response->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonStructure([
+                'data' => [[
+                    'id',
+                    'status',
+                    'created_at',
+                    'last_message_at',
+                    'latest_message' => [
+                        'content',
+                        'created_at',
+                        'read_at',
+                    ],
+                    'details' => [
+                        'description',
+                        'email',
+                    ],
+                ]],
+            ]);
+
+        // Verify the latest message is included and truncated if needed
+        $responseData = $response->json('data');
+        foreach ($responseData as $conversation) {
+            $this->assertStringStartsWith('Latest message', $conversation['latest_message']['content']);
+        }
     }
 }

@@ -56,4 +56,9 @@ class ConversationService
     {
         return $this->repository->findWithDetails($id);
     }
+
+    public function getArtistConversations(int $artistId): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->repository->getArtistConversations($artistId);
+    }
 } 

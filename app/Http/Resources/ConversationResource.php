@@ -25,6 +25,14 @@ class ConversationResource extends JsonResource
                 'reference_images' => $this->details->reference_images,
                 'email' => $this->details->email,
             ],
+            'latest_message' => $this->when($this->messages->isNotEmpty(), function () {
+                $message = $this->messages->first();
+                return [
+                    'content' => \Str::limit($message->content, 250),
+                    'created_at' => $message->created_at,
+                    'read_at' => $message->read_at,
+                ];
+            }),
         ];
     }
 }
