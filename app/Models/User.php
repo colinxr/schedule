@@ -33,4 +33,14 @@ class User extends Authenticatable
     {
         return "{$this->first_name} {$this->last_name}";
     }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class)->latest();
+    }
+
+    public function unreadMessages()
+    {
+        return $this->messages()->whereNull('read_at');
+    }
 }

@@ -29,6 +29,16 @@ class Conversation extends Model
         return $this->hasOne(ConversationDetails::class);
     }
 
+    public function messages()
+    {
+        return $this->hasMany(Message::class)->latest();
+    }
+
+    public function unreadMessages()
+    {
+        return $this->messages()->whereNull('read_at');
+    }
+
     public function conversationDetail()
     {
         return $this->details();
