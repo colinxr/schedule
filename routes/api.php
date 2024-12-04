@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\ConversationController;
 |--------------------------------------------------------------------------
 */
 
-// Intake Form Routes
 Route::post('conversations', [ConversationController::class, 'store']);
-Route::get('conversations/{conversation}', [ConversationController::class, 'show']); 
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('conversations/{id}', [ConversationController::class, 'show']);
+});

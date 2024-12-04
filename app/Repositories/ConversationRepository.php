@@ -6,23 +6,14 @@ use App\Models\Conversation;
 
 class ConversationRepository
 {
-    public function create(array $data): Conversation
+    public function findWithDetails(int $id): ?Conversation
     {
-        $conversation = Conversation::create([
-            'artist_id' => $data['artist_id'],
-            'status' => 'pending',
-        ]);
-
-        $conversation->details()->create([
-            ...$data,
-            'reference_images' => $data['reference_images'] ?? [],
-        ]);
-
-        return $conversation->load(['artist:id,name,email', 'details']);
+        return Conversation::with(['details', 'artist:id,name,email'])
+            ->findOrFail($id);
     }
 
-    public function find(int $id)
+    public function create(array $data): Conversation
     {
-        return Conversation::with(['artist:id,name,email', 'details'])->findOrFail($id);
+        return Conversation::create($data);
     }
 } 

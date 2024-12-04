@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Conversation;
+use App\Models\ConversationDetails;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -86,5 +87,69 @@ class ConversationControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_artist_can_view_own_conversation()
+    {
+        $this->actingAs($this->artist);
+
+        $conversation = Conversation::factory()
+            ->has(ConversationDetails::factory())
+            ->create(['artist_id' => $this->artist->id]);
+
+        $response = $this->getJson("/api/conversations/{$conversation->id}");
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'status',
+                    'created_at',
+                    'last_message_at',
+                    'artist' => ['id', 'name', 'email'],
+                    'details' => [
+                        'description',
+                        'reference_images',
+                        'email',
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_artist_cannot_view_others_conversation()
+    {
+        $otherArtist = User::factory()->create(['role' => 'artist']);
+        $this->actingAs($otherArtist);
+
+        $conversation = Conversation::factory()
+            ->has(ConversationDetails::factory())
+            ->create(['artist_id' => $this->artist->id]);
+
+        $response = $this->getJson("/api/conversations/{$conversation->id}");
+
+        $response->assertForbidden()
+            ->assertJson([
+                'message' => 'You are not authorized to view this conversation'
+            ]);
+    }
+
+    public function test_unauthenticated_user_cannot_view_conversation()
+    {
+        $conversation = Conversation::factory()
+            ->has(ConversationDetails::factory())
+            ->create(['artist_id' => $this->artist->id]);
+
+        $response = $this->getJson("/api/conversations/{$conversation->id}");
+
+        $response->assertForbidden();
+    }
+
+    public function test_returns_404_for_nonexistent_conversation()
+    {
+        $this->actingAs($this->artist);
+
+        $response = $this->getJson("/api/conversations/99999");
+
+        $response->assertNotFound();
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Repositories\ConversationRepository;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class ConversationService
@@ -12,38 +11,37 @@ class ConversationService
         private ConversationRepository $repository
     ) {}
 
-    public function createConversation(array $validatedData, ?array $referenceImages = []): array
+    public function createConversation(array $data)
     {
-        try {
-            $processedImages = $this->handleImageUploads($referenceImages);
-            
-            $result = DB::transaction(function () use ($validatedData, $processedImages) {
-                return $this->repository->create([
-                    ...$validatedData,
-                    'reference_images' => $processedImages,
-                ]);
-            });
+        return DB::transaction(function () use ($data) {
+            // Create conversation
+            $conversation = $this->repository->create([
+                'artist_id' => $data['artist_id'],
+                'status' => 'pending',
+            ]);
 
-            return [
-                'success' => true,
-                'conversation' => $result,
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
-        }
+            // Handle reference images
+            $referenceImages = [];
+            if (isset($data['reference_images'])) {
+                foreach ($data['reference_images'] as $image) {
+                    $path = $image->store('reference-images', 'public');
+                    $referenceImages[] = $path;
+                }
+            }
+
+            // Create details
+            $conversation->details()->create([
+                'description' => $data['description'],
+                'email' => $data['email'],
+                'reference_images' => $referenceImages,
+            ]);
+
+            return $conversation->load(['artist:id,name,email', 'details']);
+        });
     }
 
-    private function handleImageUploads(?array $images): array
+    public function findConversation(int $id)
     {
-        if (empty($images)) {
-            return [];
-        }
-
-        return array_map(function (UploadedFile $image) {
-            return $image->store('reference-images', 'public');
-        }, $images);
+        return $this->repository->findWithDetails($id);
     }
 } 

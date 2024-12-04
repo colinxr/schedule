@@ -28,4 +28,9 @@ class Conversation extends Model
     {
         return $this->hasOne(ConversationDetails::class);
     }
+
+    public function conversationDetail()
+    {
+        return $this->details();
+    }
 }
