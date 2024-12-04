@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\IntakeFormController;
+use App\Http\Controllers\Api\ConversationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,5 +11,5 @@ use App\Http\Controllers\Api\IntakeFormController;
 */
 
 // Intake Form Routes
-Route::post('intake-forms', [IntakeFormController::class, 'store']);
-Route::get('conversations/{conversation}', [IntakeFormController::class, 'show']); 
+Route::post('conversations', [ConversationController::class, 'store']);
+Route::get('conversations/{conversation}', [ConversationController::class, 'show']); 

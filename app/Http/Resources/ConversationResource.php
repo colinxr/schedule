@@ -19,13 +19,10 @@ class ConversationResource extends JsonResource
                 'name' => $this->artist->name,
                 'email' => $this->artist->email,
             ],
-            'intake_form' => [
-                'description' => $this->intakeForm->description,
-                'placement' => $this->intakeForm->placement,
-                'size' => $this->intakeForm->size,
-                'reference_images' => $this->intakeForm->reference_images,
-                'budget_range' => $this->intakeForm->budget_range,
-                'email' => $this->intakeForm->email,
+            'details' => [
+                'description' => $this->details->description,
+                'reference_images' => $this->details->reference_images,
+                'email' => $this->details->email,
             ],
         ];
     }

@@ -24,8 +24,8 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'artist_id');
     }
 
-    public function intakeForm()
+    public function details()
     {
-        return $this->hasOne(IntakeForm::class);
+        return $this->hasOne(ConversationDetails::class);
     }
 }
