@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
             $table->text('description');
-            $table->text('reference_images')->nullable(); // JSON array of image URLs
+            $table->text('reference_images')->nullable();
             $table->string('email');
+            $table->string('phone')->nullable();
             $table->timestamps();
         });
     }

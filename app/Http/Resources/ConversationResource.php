@@ -16,7 +16,8 @@ class ConversationResource extends JsonResource
             'last_message_at' => $this->last_message_at,
             'artist' => [
                 'id' => $this->artist->id,
-                'name' => $this->artist->name,
+                'first_name' => $this->artist->first_name,
+                'last_name' => $this->artist->last_name,
                 'email' => $this->artist->email,
             ],
             'details' => [

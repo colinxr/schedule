@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use App\Events\ConversationCreated;
 use App\Repositories\ConversationRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 
 class ConversationService
 {
     public function __construct(
-        private ConversationRepository $repository
+        private ConversationRepository $repository,
+        private UserService $userService
     ) {}
 
     public function createConversation(array $data)
@@ -33,14 +36,23 @@ class ConversationService
             $conversation->details()->create([
                 'description' => $data['description'],
                 'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
                 'reference_images' => $referenceImages,
             ]);
 
-            return $conversation->load(['artist:id,name,email', 'details']);
+            // Dispatch event
+            Event::dispatch(new ConversationCreated([
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+            ], $conversation->id));
+
+            return $conversation->load(['details', 'artist']);
         });
     }
 
-    public function findConversation(int $id)
+    public function findConversation(int $id): ?\App\Models\Conversation
     {
         return $this->repository->findWithDetails($id);
     }

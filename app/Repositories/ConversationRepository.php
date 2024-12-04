@@ -8,7 +8,7 @@ class ConversationRepository
 {
     public function findWithDetails(int $id): ?Conversation
     {
-        return Conversation::with(['details', 'artist:id,name,email'])
+        return Conversation::with(['details', 'artist'])
             ->findOrFail($id);
     }
 

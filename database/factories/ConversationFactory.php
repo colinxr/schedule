@@ -13,7 +13,7 @@ class ConversationFactory extends Factory
     public function definition(): array
     {
         return [
-            'artist_id' => User::factory()->create(['role' => 'artist']),
+            'artist_id' => User::factory()->create(['role' => 'artist'])->id,
             'status' => 'pending',
             'last_message_at' => now(),
         ];

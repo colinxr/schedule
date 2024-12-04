@@ -11,7 +11,7 @@ class StoreConversationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true; // Adjust based on your authorization needs
+        return true;
     }
 
     /**
@@ -25,8 +25,16 @@ class StoreConversationRequest extends FormRequest
             'artist_id' => 'required|exists:users,id',
             'description' => 'required|string',
             'reference_images' => 'nullable|array',
-            'reference_images.*' => 'image|max:5120', // 5MB max per image
-            'email' => 'required|email',
+            'reference_images.*' => 'image|max:5120',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:conversation_details,email'
+            ],
+            'phone' => 'nullable|string|max:20',
         ];
     }
 } 

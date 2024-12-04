@@ -14,6 +14,7 @@ class ConversationDetails extends Model
         'description',
         'reference_images',
         'email',
+        'phone',
     ];
 
     protected $casts = [
