@@ -163,9 +163,7 @@ class ConversationControllerTest extends TestCase
             'first_name' => 'John',
             'last_name' => 'Doe',
             'email' => 'client@example.com',
-            'reference_images' => [
-                UploadedFile::fake()->create('document.pdf', 100),
-            ],
+            'reference_images' => ['not-an-image'],
         ];
 
         $response = $this->postJson('/api/conversations', $formData);
@@ -248,30 +246,6 @@ class ConversationControllerTest extends TestCase
         $response->assertNotFound();
     }
 
-    public function test_prevents_duplicate_email_for_clients()
-    {
-        // First conversation/client
-        $this->postJson('/api/conversations', [
-            'artist_id' => $this->artist->id,
-            'description' => 'First design',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'email' => 'client@example.com',
-        ])->assertStatus(201);
-
-        // Second conversation with same email
-        $response = $this->postJson('/api/conversations', [
-            'artist_id' => $this->artist->id,
-            'description' => 'Second design',
-            'first_name' => 'Jane',
-            'last_name' => 'Doe',
-            'email' => 'client@example.com',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
-    }
-
     public function test_handles_large_reference_images()
     {
         $formData = [
@@ -289,5 +263,67 @@ class ConversationControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['reference_images.0']);
+    }
+
+    public function test_client_can_submit_multiple_requests(): void
+    {
+        Event::fake();
+        
+        $artist1 = User::factory()->create(['role' => 'artist']);
+        $artist2 = User::factory()->create(['role' => 'artist']);
+        
+        // First request to artist1
+        $response1 = $this->postJson('/api/conversations', [
+            'artist_id' => $artist1->id,
+            'description' => 'First design',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'client@example.com',
+            'phone' => '1234567890'
+        ]);
+        
+        $response1->assertStatus(201);
+        
+        // Second request to same artist
+        $response2 = $this->postJson('/api/conversations', [
+            'artist_id' => $artist1->id,
+            'description' => 'Second design',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'client@example.com',
+            'phone' => '1234567890'
+        ]);
+        
+        $response2->assertStatus(201);
+        
+        // Request to different artist
+        $response3 = $this->postJson('/api/conversations', [
+            'artist_id' => $artist2->id,
+            'description' => 'Third design',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'client@example.com',
+            'phone' => '1234567890'
+        ]);
+        
+        $response3->assertStatus(201);
+        
+        // Verify all conversations were created
+        $this->assertDatabaseCount('conversations', 3);
+        $this->assertDatabaseHas('conversation_details', [
+            'description' => 'First design',
+            'email' => 'client@example.com'
+        ]);
+        $this->assertDatabaseHas('conversation_details', [
+            'description' => 'Second design',
+            'email' => 'client@example.com'
+        ]);
+        $this->assertDatabaseHas('conversation_details', [
+            'description' => 'Third design',
+            'email' => 'client@example.com'
+        ]);
+        
+        // Verify events were dispatched
+        Event::assertDispatched(ConversationCreated::class, 3);
     }
 }

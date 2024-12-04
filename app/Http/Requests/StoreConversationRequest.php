@@ -31,8 +31,7 @@ class StoreConversationRequest extends FormRequest
             'email' => [
                 'required',
                 'email',
-                'max:255',
-                'unique:conversation_details,email'
+                'max:255'
             ],
             'phone' => 'nullable|string|max:20',
         ];
