@@ -332,46 +332,16 @@ class ConversationControllerTest extends TestCase
     {
         $artist = User::factory()->create(['role' => 'artist']);
         
-        // Create 3 conversations for this artist with messages
-        $conversations = Conversation::factory()
+        // Create conversations for this artist with details and messages
+        Conversation::factory()
+            ->withDetailsAndMessages()
             ->count(3)
             ->create(['artist_id' => $artist->id]);
             
-        foreach ($conversations as $conversation) {
-            ConversationDetails::factory()->create([
-                'conversation_id' => $conversation->id,
-                'email' => fake()->email(),
-                'description' => fake()->sentence(),
-            ]);
-            
-            // Create multiple messages for each conversation
-            Message::factory()->create([
-                'conversation_id' => $conversation->id,
-                'user_id' => $artist->id,
-                'content' => 'Latest message for conversation ' . $conversation->id,
-                'created_at' => now(),
-            ]);
-            
-            Message::factory()->create([
-                'conversation_id' => $conversation->id,
-                'user_id' => $artist->id,
-                'content' => 'Older message',
-                'created_at' => now()->subHour(),
-            ]);
-        }
-        
         // Create a conversation for another artist
-        $otherConversation = Conversation::factory()
+        Conversation::factory()
+            ->withDetailsAndMessages()
             ->create(['artist_id' => User::factory()->create(['role' => 'artist'])->id]);
-        ConversationDetails::factory()->create([
-            'conversation_id' => $otherConversation->id,
-            'email' => fake()->email(),
-            'description' => fake()->sentence(),
-        ]);
-        Message::factory()->create([
-            'conversation_id' => $otherConversation->id,
-            'content' => 'This should not appear',
-        ]);
 
         $this->actingAs($artist);
         $response = $this->getJson('/api/conversations');
