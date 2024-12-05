@@ -17,9 +17,17 @@ class ConversationService
     public function createConversation(array $data)
     {
         return DB::transaction(function () use ($data) {
+            // Create client user first
+            $client = $this->userService->createClient([
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+            ]);
+
             // Create conversation
             $conversation = $this->repository->create([
                 'artist_id' => $data['artist_id'],
+                'client_id' => $client->id,
                 'status' => 'pending',
             ]);
 
@@ -48,7 +56,7 @@ class ConversationService
                 'phone' => $data['phone'] ?? null,
             ], $conversation->id));
 
-            return $conversation->load(['details', 'artist']);
+            return $conversation->load(['details', 'client']);
         });
     }
 

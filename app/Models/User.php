@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable implements AuthenticatableContract
 {
@@ -43,5 +44,13 @@ class User extends Authenticatable implements AuthenticatableContract
     public function unreadMessages()
     {
         return $this->messages()->whereNull('read_at');
+    }
+
+    public function details(): HasOne
+    {
+        return $this->hasOne(ConversationDetails::class, 'conversation_id')
+            ->whereHas('conversation', function($query) {
+                $query->where('client_id', $this->id);
+            });
     }
 }

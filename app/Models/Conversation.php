@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Conversation extends Model
 {
@@ -11,6 +14,7 @@ class Conversation extends Model
 
     protected $fillable = [
         'artist_id',
+        'client_id',
         'status',
         'last_message_at',
     ];
@@ -24,12 +28,17 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'artist_id');
     }
 
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'client_id');
+    }
+
     public function details()
     {
         return $this->hasOne(ConversationDetails::class);
     }
 
-    public function messages()
+    public function messages(): HasMany
     {
         return $this->hasMany(Message::class)->latest();
     }

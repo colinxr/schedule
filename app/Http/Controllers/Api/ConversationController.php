@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreConversationRequest;
 use App\Http\Resources\ConversationResource;
+use App\Models\Conversation;
 use App\Services\ConversationService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ConversationController extends Controller
 {
@@ -27,6 +29,27 @@ class ConversationController extends Controller
         return ConversationResource::collection($conversations);
     }
 
+    public function show(Conversation $conversation)
+    {
+        abort_unless(auth()->id() === $conversation->artist_id, 403);
+
+        $messages = Cache::remember(
+            "conversation.{$conversation->id}.messages.page." . request('page', 1),
+            now()->addMinute(),
+            fn() => $conversation->messages()->paginate(50)
+        );
+
+        $clientDetails = Cache::remember(
+            "conversation.{$conversation->id}.client_details",
+            now()->addHour(),
+            fn() => $conversation->client->load('details')
+        );
+
+        $conversation->setRelation('messages', $messages);
+        
+        return new ConversationResource($conversation);
+    }
+
     public function store(StoreConversationRequest $request)
     {
         try {
@@ -44,32 +67,6 @@ class ConversationController extends Controller
                 'message' => 'Failed to start conversation',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public function show(int $id)
-    {
-        if (!Auth::check()) {
-            return response()->json([
-                'message' => 'Unauthenticated'
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-
-        try {
-            $conversation = $this->conversationService->findConversation($id);
-            
-            if ($conversation->artist_id !== Auth::id()) {
-                return response()->json([
-                    'message' => 'You are not authorized to view this conversation'
-                ], Response::HTTP_FORBIDDEN);
-            }
-
-            return new ConversationResource($conversation->load(['details', 'artist']));
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Conversation not found',
-                'error' => $e->getMessage()
-            ], Response::HTTP_NOT_FOUND);
         }
     }
 }

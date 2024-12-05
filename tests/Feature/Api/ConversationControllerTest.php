@@ -13,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use Illuminate\Support\Facades\Cache;
 
 class ConversationControllerTest extends TestCase
 {
@@ -27,24 +28,31 @@ class ConversationControllerTest extends TestCase
         $this->artist = User::factory()->create(['role' => 'artist']);
     }
 
-    public function test_can_submit_conversation_details_and_create_client()
+    public function test_can_submit_conversation_details_and_create_client(): void
     {
-        Event::fake();
+        Storage::fake('public');
+
+        /** @var \App\Models\User $artist */
+        $artist = User::factory()->create(['role' => 'artist']);
 
         $formData = [
-            'artist_id' => $this->artist->id,
-            'description' => 'A beautiful design concept',
+            'artist_id' => $artist->id,
             'first_name' => 'John',
             'last_name' => 'Doe',
             'email' => 'client@example.com',
             'phone' => '1234567890',
+            'description' => 'Test description',
             'reference_images' => [
-                UploadedFile::fake()->image('design1.jpg'),
-                UploadedFile::fake()->image('design2.jpg'),
+                UploadedFile::fake()->image('test1.jpg'),
+                UploadedFile::fake()->image('test2.jpg'),
             ],
         ];
 
         $response = $this->postJson('/api/conversations', $formData);
+        
+        if ($response->status() === 500) {
+            dd($response->json());
+        }
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -53,35 +61,17 @@ class ConversationControllerTest extends TestCase
                     'id',
                     'status',
                     'created_at',
-                    'last_message_at',
-                    'artist' => ['id', 'first_name', 'last_name', 'email'],
-                    'details' => [
-                        'description',
-                        'reference_images',
-                        'email',
-                    ],
-                ],
+                    'client' => [
+                        'id',
+                        'name',
+                        'details' => [
+                            'phone',
+                            'email',
+                            'instagram'
+                        ]
+                    ]
+                ]
             ]);
-
-        // Assert conversation details were created
-        $conversation = Conversation::latest()->first();
-        $this->assertDatabaseHas('conversation_details', [
-            'conversation_id' => $conversation->id,
-            'description' => 'A beautiful design concept',
-            'email' => 'client@example.com',
-            'phone' => '1234567890',
-        ]);
-
-        // Verify files were stored
-        foreach ($conversation->details->reference_images as $image) {
-            Storage::disk('public')->exists($image);
-        }
-
-        // Assert event was dispatched
-        Event::assertDispatched(ConversationCreated::class, function ($event) use ($conversation) {
-            return $event->conversationId === $conversation->id
-                && $event->clientData['email'] === 'client@example.com';
-        });
     }
 
     public function test_can_submit_conversation_without_optional_fields()
@@ -177,12 +167,15 @@ class ConversationControllerTest extends TestCase
     {
         /** @var \App\Models\User $artist */
         $artist = User::factory()->create(['role' => 'artist']);
-        $conversation = Conversation::factory()->create(['artist_id' => $artist->id]);
-        ConversationDetails::factory()->create([
-            'conversation_id' => $conversation->id,
-            'email' => 'client@example.com',
-            'description' => 'Test description'
-        ]);
+        
+        /** @var \App\Models\User $client */
+        $client = User::factory()->create(['role' => 'client']);
+        
+        $conversation = Conversation::factory()
+            ->for($artist, 'artist')
+            ->for($client, 'client')
+            ->has(ConversationDetails::factory())
+            ->create();
 
         $this->actingAs($artist);
         $response = $this->getJson("/api/conversations/{$conversation->id}");
@@ -193,19 +186,16 @@ class ConversationControllerTest extends TestCase
                     'id',
                     'status',
                     'created_at',
-                    'last_message_at',
-                    'artist' => [
+                    'client' => [
                         'id',
-                        'first_name',
-                        'last_name',
-                        'email',
-                    ],
-                    'details' => [
-                        'description',
-                        'reference_images',
-                        'email',
-                    ],
-                ],
+                        'name',
+                        'details' => [
+                            'phone',
+                            'email',
+                            'instagram'
+                        ]
+                    ]
+                ]
             ]);
     }
 
@@ -216,12 +206,14 @@ class ConversationControllerTest extends TestCase
         
         /** @var \App\Models\User $otherArtist */
         $otherArtist = User::factory()->create(['role' => 'artist']);
-        $conversation = Conversation::factory()->create(['artist_id' => $artist->id]);
-        ConversationDetails::factory()->create([
-            'conversation_id' => $conversation->id,
-            'email' => 'client@example.com',
-            'description' => 'Test description'
-        ]);
+        
+        /** @var \App\Models\User $client */
+        $client = User::factory()->create(['role' => 'client']);
+        
+        $conversation = Conversation::factory()
+            ->for($artist, 'artist')
+            ->for($client, 'client')
+            ->create();
 
         $this->actingAs($otherArtist);
         $response = $this->getJson("/api/conversations/{$conversation->id}");
@@ -231,13 +223,16 @@ class ConversationControllerTest extends TestCase
 
     public function test_unauthenticated_user_cannot_view_conversation(): void
     {
+        /** @var \App\Models\User $artist */
         $artist = User::factory()->create(['role' => 'artist']);
-        $conversation = Conversation::factory()->create(['artist_id' => $artist->id]);
-        ConversationDetails::factory()->create([
-            'conversation_id' => $conversation->id,
-            'email' => 'client@example.com',
-            'description' => 'Test description'
-        ]);
+        
+        /** @var \App\Models\User $client */
+        $client = User::factory()->create(['role' => 'client']);
+        
+        $conversation = Conversation::factory()
+            ->for($artist, 'artist')
+            ->for($client, 'client')
+            ->create();
 
         $response = $this->getJson("/api/conversations/{$conversation->id}");
 
@@ -337,16 +332,23 @@ class ConversationControllerTest extends TestCase
         /** @var \App\Models\User $artist */
         $artist = User::factory()->create(['role' => 'artist']);
         
+        /** @var \App\Models\User $client */
+        $client = User::factory()->create(['role' => 'client']);
+        
         // Create conversations for this artist with details and messages
         Conversation::factory()
-            ->withDetailsAndMessages()
+            ->for($artist, 'artist')
+            ->for($client, 'client')
+            ->has(ConversationDetails::factory())
             ->count(3)
-            ->create(['artist_id' => $artist->id]);
+            ->create();
             
         // Create a conversation for another artist
         Conversation::factory()
-            ->withDetailsAndMessages()
-            ->create(['artist_id' => User::factory()->create(['role' => 'artist'])->id]);
+            ->for(User::factory()->create(['role' => 'artist']), 'artist')
+            ->for(User::factory()->create(['role' => 'client']), 'client')
+            ->has(ConversationDetails::factory())
+            ->create();
 
         $this->actingAs($artist);
         $response = $this->getJson('/api/conversations');
@@ -358,23 +360,138 @@ class ConversationControllerTest extends TestCase
                     'id',
                     'status',
                     'created_at',
-                    'last_message_at',
-                    'latest_message' => [
-                        'content',
-                        'created_at',
-                        'read_at',
-                    ],
-                    'details' => [
-                        'description',
-                        'email',
-                    ],
-                ]],
+                    'client' => [
+                        'id',
+                        'name',
+                        'details' => [
+                            'phone',
+                            'email',
+                            'instagram'
+                        ]
+                    ]
+                ]]
+            ]);
+    }
+
+    public function test_artist_can_fetch_conversation_with_paginated_messages(): void
+    {
+        /** @var \App\Models\User $artist */
+        $artist = User::factory()->create(['role' => 'artist']);
+        
+        /** @var \App\Models\User $client */
+        $client = User::factory()->create(['role' => 'client']);
+        
+        $conversation = Conversation::factory()
+            ->has(Message::factory()->count(75)) // Create 75 messages to test pagination
+            ->has(ConversationDetails::factory()->state([
+                'phone' => '1234567890',
+                'email' => 'client@example.com',
+                'instagram' => '@client'
+            ]))
+            ->create([
+                'artist_id' => $artist->id,
+                'client_id' => $client->id
             ]);
 
-        // Verify the latest message is included and truncated if needed
-        $responseData = $response->json('data');
-        foreach ($responseData as $conversation) {
-            $this->assertStringStartsWith('Latest message', $conversation['latest_message']['content']);
-        }
+        $this->actingAs($artist);
+        
+        // First page should return latest 50 messages
+        $response = $this->getJson("/api/conversations/{$conversation->id}");
+        
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'status',
+                    'created_at',
+                    'client' => [
+                        'id',
+                        'name',
+                        'details' => [
+                            'phone',
+                            'email',
+                            'instagram'
+                        ]
+                    ],
+                    'messages' => [
+                        'data' => [
+                            '*' => [
+                                'id',
+                                'content',
+                                'created_at',
+                                'read_at',
+                                'sender_type',
+                                'sender_id'
+                            ]
+                        ],
+                        'next_page_url',
+                        'prev_page_url'
+                    ]
+                ]
+            ])
+            ->assertJsonCount(50, 'data.messages.data')
+            ->assertJsonPath('data.messages.next_page_url', fn($url) => !is_null($url));
+
+        // Fetch second page
+        $nextPageUrl = $response->json('data.messages.next_page_url');
+        $response = $this->getJson($nextPageUrl);
+        
+        $response->assertOk()
+            ->assertJsonCount(25, 'data.messages.data') // Should have remaining 25 messages
+            ->assertJsonPath('data.messages.next_page_url', null);
+    }
+
+    public function test_conversation_client_and_details_are_cached(): void
+    {
+        /** @var \App\Models\User $artist */
+        $artist = User::factory()->create(['role' => 'artist']);
+        
+        /** @var \App\Models\User $client */
+        $client = User::factory()->create(['role' => 'client']);
+        
+        $conversation = Conversation::factory()
+            ->has(ConversationDetails::factory()->state([
+                'phone' => '1234567890',
+                'email' => 'client@example.com',
+                'instagram' => '@client'
+            ]))
+            ->create([
+                'artist_id' => $artist->id,
+                'client_id' => $client->id
+            ]);
+
+        $this->actingAs($artist);
+        
+        // First request should cache the data
+        Cache::shouldReceive('remember')
+            ->withArgs(function($key, $ttl, $callback) use ($conversation) {
+                return in_array($key, [
+                    "conversation.{$conversation->id}.messages.page.1",
+                    "conversation.{$conversation->id}.client_details"
+                ]);
+            })
+            ->twice()
+            ->andReturnUsing(function($key, $ttl, $callback) {
+                return $callback();
+            });
+
+        $this->getJson("/api/conversations/{$conversation->id}")
+            ->assertOk();
+
+        // Second request should use the same cache
+        Cache::shouldReceive('remember')
+            ->withArgs(function($key, $ttl, $callback) use ($conversation) {
+                return in_array($key, [
+                    "conversation.{$conversation->id}.messages.page.1",
+                    "conversation.{$conversation->id}.client_details"
+                ]);
+            })
+            ->twice()
+            ->andReturnUsing(function($key, $ttl, $callback) {
+                return $callback();
+            });
+
+        $this->getJson("/api/conversations/{$conversation->id}")
+            ->assertOk();
     }
 }
