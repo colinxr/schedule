@@ -3,18 +3,18 @@
 namespace Tests\Unit;
 
 use App\Models\User;
-use App\Models\UserProfile;
+use App\Models\Profile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class UserProfileTest extends TestCase
+class ProfileTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_profile_belongs_to_user(): void
+    public function test_profile_belongs_to_user(): void
     {
         $user = User::factory()->create();
-        $profile = UserProfile::factory()->for($user)->create();
+        $profile = Profile::factory()->for($user)->create();
 
         $this->assertTrue($profile->user->is($user));
     }
@@ -22,10 +22,10 @@ class UserProfileTest extends TestCase
     public function test_user_can_have_profile(): void
     {
         $user = User::factory()
-            ->has(UserProfile::factory(), 'profile')
+            ->has(Profile::factory(), 'profile')
             ->create();
 
-        $this->assertInstanceOf(UserProfile::class, $user->profile);
+        $this->assertInstanceOf(Profile::class, $user->profile);
     }
 
     public function test_profile_settings_are_cast_to_array(): void
@@ -38,7 +38,7 @@ class UserProfileTest extends TestCase
             'theme' => 'dark',
         ];
 
-        $profile = UserProfile::factory()
+        $profile = Profile::factory()
             ->withCustomSettings($settings)
             ->create();
 
@@ -48,7 +48,7 @@ class UserProfileTest extends TestCase
 
     public function test_profile_can_have_null_settings(): void
     {
-        $profile = UserProfile::factory()
+        $profile = Profile::factory()
             ->withoutSettings()
             ->create();
 
@@ -58,13 +58,13 @@ class UserProfileTest extends TestCase
     public function test_profile_is_deleted_when_user_is_deleted(): void
     {
         $user = User::factory()
-            ->has(UserProfile::factory(), 'profile')
+            ->has(Profile::factory(), 'profile')
             ->create();
 
         $profileId = $user->profile->id;
 
         $user->delete();
 
-        $this->assertDatabaseMissing('user_profiles', ['id' => $profileId]);
+        $this->assertDatabaseMissing('profiles', ['id' => $profileId]);
     }
 } 

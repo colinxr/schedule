@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\ConversationDetails;
 use App\Models\Message;
 use App\Models\User;
+use App\Notifications\NewConversationNotification;
 use Illuminate\Support\Facades\Log;
 
 class ConversationDetailsObserver
@@ -21,12 +22,15 @@ class ConversationDetailsObserver
             'has_conversation' => isset($details->conversation),
         ]);
 
-        if ($details->description) {
-            // Load the conversation relationship if not loaded
-            if (!$details->relationLoaded('conversation')) {
-                $details->load('conversation');
-            }
+        // Load necessary relationships
+        if (!$details->relationLoaded('conversation')) {
+            $details->load(['conversation.client', 'conversation.artist.profile']);
+        }
 
+        // Send the new conversation notification
+        $details->conversation->artist->notify(new NewConversationNotification($details->conversation));
+
+        if ($details->description) {
             $messageData = [
                 'conversation_id' => $details->conversation_id,
                 'content' => $details->description,

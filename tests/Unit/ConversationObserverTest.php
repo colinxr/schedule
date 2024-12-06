@@ -9,7 +9,7 @@ use App\Models\Conversation;
 use App\Models\ConversationDetails;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class ConversationDetailsObserverTest extends TestCase
+class ConversationObserverTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -39,8 +39,12 @@ class ConversationDetailsObserverTest extends TestCase
         
         $this->assertNotNull($message);
         $this->assertEquals($description, $message->content);
-        $this->assertEquals($client->id, $message->user_id);
+        $this->assertEquals($client->id, $message->sender_id);
+        $this->assertEquals(User::class, $message->sender_type);
         $this->assertNotNull($conversation->fresh()->last_message_at);
+
+        // Verify the polymorphic relationship works
+        $this->assertTrue($message->sender->is($client));
     }
 
     public function test_does_not_create_message_when_description_is_empty(): void
