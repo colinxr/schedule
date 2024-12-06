@@ -7,21 +7,23 @@ use App\Http\Requests\StoreAppointmentRequest;
 use App\Http\Requests\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Conversation;
+use App\Services\AppointmentService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AppointmentController extends Controller
 {
     use AuthorizesRequests;
 
+    public function __construct(
+        private AppointmentService $appointmentService
+    ) {}
+
     public function index()
     {
-        $user = Auth::user();
-        $appointments = $user->role === 'artist' 
-            ? $user->appointments()->with('client')->latest()->get()
-            : $user->clientAppointments()->with('artist')->latest()->get();
-
+        $appointments = $this->appointmentService->getUserAppointments(Auth::user());
         return response()->json(['data' => $appointments]);
     }
 
@@ -29,38 +31,67 @@ class AppointmentController extends Controller
     {
         $this->authorize('view', $appointment);
 
-        return response()->json([
-            'data' => $appointment->load(['artist', 'client', 'conversation.details'])
-        ]);
+        $appointment = $this->appointmentService->getAppointmentWithDetails($appointment);
+        return response()->json(['data' => $appointment]);
     }
 
     public function store(StoreAppointmentRequest $request)
     {
-        $validated = $request->validated();
-        $conversation = Conversation::findOrFail($validated['conversation_id']);
+        try {
+            $conversation = Conversation::findOrFail($request->validated('conversation_id'));
+            
+            $appointment = $this->appointmentService->createAppointment(
+                $request->validated(),
+                Auth::user(),
+                $conversation
+            );
 
-        $appointment = Appointment::create([
-            ...$validated,
-            'artist_id' => Auth::id(),
-            'client_id' => $conversation->client_id,
-        ]);
+            return response()->json(['data' => $appointment], Response::HTTP_CREATED);
 
-        return response()->json(['data' => $appointment], Response::HTTP_CREATED);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Conversation not found'
+            ], Response::HTTP_NOT_FOUND);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create appointment',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     public function update(UpdateAppointmentRequest $request, Appointment $appointment)
     {
-        $appointment->update($request->validated());
+        try {
+            $appointment = $this->appointmentService->updateAppointment(
+                $appointment,
+                $request->validated()
+            );
 
-        return response()->json(['data' => $appointment]);
+            return response()->json(['data' => $appointment]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update appointment',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     public function destroy(Appointment $appointment)
     {
         $this->authorize('delete', $appointment);
 
-        $appointment->delete();
+        try {
+            $this->appointmentService->deleteAppointment($appointment);
+            return response()->json(null, Response::HTTP_NO_CONTENT);
 
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete appointment',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 } 
