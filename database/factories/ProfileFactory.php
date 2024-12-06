@@ -3,12 +3,12 @@
 namespace Database\Factories;
 
 use App\Models\User;
-use App\Models\UserProfile;
+use App\Models\Profile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class UserProfileFactory extends Factory
+class ProfileFactory extends Factory
 {
-    protected $model = UserProfile::class;
+    protected $model = Profile::class;
 
     public function definition(): array
     {

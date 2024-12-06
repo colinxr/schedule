@@ -8,8 +8,10 @@ use App\Repositories\ConversationRepository;
 use App\Services\ConversationService;
 use App\Models\Conversation;
 use App\Models\ConversationDetails;
+use App\Models\Message;
 use App\Observers\ConversationObserver;
 use App\Observers\ConversationDetailsObserver;
+use App\Observers\MessageObserver;
 use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
         Log::info('Registering ConversationDetails observer');
         ConversationDetails::observe(ConversationDetailsObserver::class);
         Conversation::observe(ConversationObserver::class);
+        Message::observe(MessageObserver::class);
     }
 }
