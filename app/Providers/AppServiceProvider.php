@@ -9,9 +9,11 @@ use App\Services\ConversationService;
 use App\Models\Conversation;
 use App\Models\ConversationDetails;
 use App\Models\Message;
+use App\Models\Appointment;
 use App\Observers\ConversationObserver;
 use App\Observers\ConversationDetailsObserver;
 use App\Observers\MessageObserver;
+use App\Observers\AppointmentObserver;
 use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,5 +35,6 @@ class AppServiceProvider extends ServiceProvider
         ConversationDetails::observe(ConversationDetailsObserver::class);
         Conversation::observe(ConversationObserver::class);
         Message::observe(MessageObserver::class);
+        Appointment::observe(AppointmentObserver::class);
     }
 }
