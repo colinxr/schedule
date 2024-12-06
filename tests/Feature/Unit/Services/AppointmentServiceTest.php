@@ -1,17 +1,19 @@
 <?php
 
-namespace Tests\Unit\Services;
+namespace Tests\Feature\Unit\Services;
 
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Conversation;
 use App\Services\AppointmentService;
-use App\Services\GoogleCalendarService;
-use App\Exceptions\Appointment\GoogleCalendarSyncException;
+use App\Events\AppointmentCreated;
+use App\Events\AppointmentUpdated;
+use App\Events\AppointmentDeleted;
 use App\Exceptions\Appointment\AppointmentCreationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
+use Illuminate\Support\Facades\Event;
+use PHPUnit\Framework\Attributes\Test;
 use Carbon\Carbon;
 
 class AppointmentServiceTest extends TestCase
@@ -19,274 +21,198 @@ class AppointmentServiceTest extends TestCase
     use RefreshDatabase;
 
     private AppointmentService $service;
-    private GoogleCalendarService $calendarService;
+    private User $artist;
+    private User $client;
+    private Conversation $conversation;
 
     protected function setUp(): void
     {
         parent::setUp();
         
-        $this->calendarService = Mockery::mock(GoogleCalendarService::class);
-        $this->service = new AppointmentService($this->calendarService);
+        $this->service = app(AppointmentService::class);
+        
+        $this->artist = User::factory()->create(['role' => 'artist']);
+        $this->client = User::factory()->create(['role' => 'client']);
+        
+        $this->conversation = Conversation::factory()->create([
+            'artist_id' => $this->artist->id,
+            'client_id' => $this->client->id,
+        ]);
     }
 
-    public function test_can_get_artist_appointments()
+    #[Test]
+    public function it_creates_an_appointment_and_dispatches_event()
     {
-        $artist = User::factory()->create(['role' => 'artist']);
-        $appointments = Appointment::factory()
-            ->count(3)
-            ->for($artist, 'artist')
-            ->create();
+        Event::fake();
 
-        // Create appointments for another artist (should not be returned)
-        Appointment::factory()->count(2)->create();
+        $appointmentData = [
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDay()->addHours(2),
+        ];
 
-        $result = $this->service->getUserAppointments($artist);
+        $appointment = $this->service->createAppointment(
+            $appointmentData,
+            $this->artist,
+            $this->conversation
+        );
+
+        $this->assertDatabaseHas('appointments', [
+            'id' => $appointment->id,
+            'artist_id' => $this->artist->id,
+            'client_id' => $this->client->id,
+            'conversation_id' => $this->conversation->id,
+        ]);
+
+        Event::assertDispatched(AppointmentCreated::class, function ($event) use ($appointment) {
+            return $event->appointment->id === $appointment->id;
+        });
+    }
+
+    #[Test]
+    public function it_updates_an_appointment_and_dispatches_event()
+    {
+        Event::fake();
+
+        $startDate = now()->addDay()->startOfHour();
+        $endDate = $startDate->copy()->addHours(2);
+
+        $appointment = Appointment::factory()->create([
+            'artist_id' => $this->artist->id,
+            'client_id' => $this->client->id,
+            'conversation_id' => $this->conversation->id,
+            'starts_at' => $startDate,
+            'ends_at' => $endDate,
+        ]);
+
+        $newStartDate = now()->addDays(2)->startOfHour();
+        $newEndDate = $newStartDate->copy()->addHours(2);
+
+        $updateData = [
+            'starts_at' => $newStartDate->toDateTimeString(),
+            'ends_at' => $newEndDate->toDateTimeString(),
+        ];
+
+        $updatedAppointment = $this->service->updateAppointment($appointment, $updateData);
+
+        // Parse the dates for comparison
+        $updatedStartsAt = Carbon::parse($updatedAppointment->starts_at);
+        $updatedEndsAt = Carbon::parse($updatedAppointment->ends_at);
+
+        // Assert the dates were updated correctly
+        $this->assertTrue(
+            $updatedStartsAt->equalTo($newStartDate) &&
+            $updatedEndsAt->equalTo($newEndDate)
+        );
+
+        // Assert the event was dispatched with the changes
+        Event::assertDispatched(AppointmentUpdated::class, function ($event) use ($appointment) {
+            return $event->appointment->id === $appointment->id
+                && isset($event->changedAttributes['starts_at'])
+                && isset($event->changedAttributes['ends_at']);
+        });
+    }
+
+    #[Test]
+    public function it_deletes_an_appointment_and_dispatches_event()
+    {
+        Event::fake();
+
+        $appointment = Appointment::factory()->create([
+            'artist_id' => $this->artist->id,
+            'client_id' => $this->client->id,
+            'conversation_id' => $this->conversation->id,
+        ]);
+
+        $this->service->deleteAppointment($appointment);
+
+        $this->assertDatabaseMissing('appointments', ['id' => $appointment->id]);
+
+        Event::assertDispatched(AppointmentDeleted::class, function ($event) use ($appointment) {
+            return $event->appointment->id === $appointment->id;
+        });
+    }
+
+    #[Test]
+    public function it_throws_exception_when_non_artist_tries_to_create_appointment()
+    {
+        $this->expectException(AppointmentCreationException::class);
+
+        $nonArtist = User::factory()->create(['role' => 'client']);
+
+        $this->service->createAppointment(
+            ['starts_at' => now(), 'ends_at' => now()->addHour()],
+            $nonArtist,
+            $this->conversation
+        );
+    }
+
+    #[Test]
+    public function it_throws_exception_when_artist_creates_appointment_for_wrong_conversation()
+    {
+        $this->expectException(AppointmentCreationException::class);
+
+        $otherArtist = User::factory()->create(['role' => 'artist']);
+        
+        $this->service->createAppointment(
+            ['starts_at' => now(), 'ends_at' => now()->addHour()],
+            $otherArtist,
+            $this->conversation
+        );
+    }
+
+    #[Test]
+    public function it_retrieves_appointments_for_artist()
+    {
+        $appointments = Appointment::factory()->count(3)->create([
+            'artist_id' => $this->artist->id,
+        ]);
+
+        $result = $this->service->getUserAppointments($this->artist);
 
         $this->assertCount(3, $result);
-        $this->assertTrue($result->first()->artist->is($artist));
-    }
-
-    public function test_can_get_client_appointments()
-    {
-        $client = User::factory()->create(['role' => 'client']);
-        $appointments = Appointment::factory()
-            ->count(2)
-            ->for($client, 'client')
-            ->create();
-
-        // Create appointments for another client (should not be returned)
-        Appointment::factory()->count(3)->create();
-
-        $result = $this->service->getUserAppointments($client);
-
-        $this->assertCount(2, $result);
-        $this->assertTrue($result->first()->client->is($client));
-    }
-
-    public function test_can_create_appointment_without_google_calendar()
-    {
-        $artist = User::factory()->create(['role' => 'artist']);
-        $conversation = Conversation::factory()
-            ->for($artist, 'artist')
-            ->create();
-
-        $startsAt = now()->addDay();
-        $endsAt = $startsAt->copy()->addHours(2);
-
-        $appointmentData = [
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
-            'conversation_id' => $conversation->id,
-        ];
-
-        $appointment = $this->service->createAppointment($appointmentData, $artist, $conversation);
-
-        $this->assertDatabaseHas('appointments', [
-            'id' => $appointment->id,
-            'artist_id' => $artist->id,
-            'client_id' => $conversation->client_id,
-            'conversation_id' => $conversation->id,
-            'starts_at' => $startsAt->toDateTimeString(),
-            'ends_at' => $endsAt->toDateTimeString(),
-        ]);
-
-        // Test the RFC3339 accessors
         $this->assertEquals(
-            $startsAt->toRfc3339String(),
-            $appointment->starts_at
-        );
-        $this->assertEquals(
-            $endsAt->toRfc3339String(),
-            $appointment->ends_at
+            $appointments->pluck('id')->sort()->values(),
+            $result->pluck('id')->sort()->values()
         );
     }
 
-    public function test_can_create_appointment_with_google_calendar()
+    #[Test]
+    public function it_retrieves_appointments_for_client()
     {
-        $artist = User::factory()->create([
-            'role' => 'artist',
-            'google_calendar_id' => 'calendar_id'
-        ]);
-        
-        $conversation = Conversation::factory()
-            ->for($artist, 'artist')
-            ->create();
-
-        $startsAt = now()->addDay();
-        $endsAt = $startsAt->copy()->addHours(2);
-
-        $appointmentData = [
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
-            'conversation_id' => $conversation->id,
-        ];
-
-        $this->calendarService
-            ->shouldReceive('createEvent')
-            ->once()
-            ->andReturn('event_id');
-
-        $appointment = $this->service->createAppointment($appointmentData, $artist, $conversation);
-
-        $this->assertDatabaseHas('appointments', [
-            'id' => $appointment->id,
-            'google_event_id' => 'event_id',
-            'conversation_id' => $conversation->id,
-            'starts_at' => $startsAt->toDateTimeString(),
-            'ends_at' => $endsAt->toDateTimeString(),
-        ]);
-    }
-
-    public function test_throws_exception_when_google_calendar_sync_fails()
-    {
-        $artist = User::factory()->create([
-            'role' => 'artist',
-            'google_calendar_id' => 'calendar_id'
-        ]);
-        
-        $conversation = Conversation::factory()
-            ->for($artist, 'artist')
-            ->create();
-
-        $this->calendarService
-            ->shouldReceive('createEvent')
-            ->once()
-            ->andReturn(null);
-
-        $this->expectException(GoogleCalendarSyncException::class);
-
-        $this->service->createAppointment([
-            'starts_at' => now()->addDay(),
-            'ends_at' => now()->addDay()->addHours(2),
-            'conversation_id' => $conversation->id,
-        ], $artist, $conversation);
-    }
-
-    public function test_only_artists_can_create_appointments()
-    {
-        $client = User::factory()->create(['role' => 'client']);
-        $conversation = Conversation::factory()->create();
-
-        $this->expectException(AppointmentCreationException::class);
-
-        $this->service->createAppointment([
-            'starts_at' => now()->addDay(),
-            'ends_at' => now()->addDay()->addHours(2),
-            'conversation_id' => $conversation->id,
-        ], $client, $conversation);
-    }
-
-    public function test_artist_can_only_create_appointments_for_own_conversations()
-    {
-        $artist = User::factory()->create(['role' => 'artist']);
-        $conversation = Conversation::factory()->create(); // Different artist's conversation
-
-        $this->expectException(AppointmentCreationException::class);
-
-        $this->service->createAppointment([
-            'starts_at' => now()->addDay(),
-            'ends_at' => now()->addDay()->addHours(2),
-            'conversation_id' => $conversation->id,
-        ], $artist, $conversation);
-    }
-
-    public function test_can_update_appointment()
-    {
-        $startsAt = now()->addDays(2);
-        $appointment = Appointment::factory()->create();
-
-        $updatedAppointment = $this->service->updateAppointment($appointment, [
-            'starts_at' => $startsAt,
+        $appointments = Appointment::factory()->count(3)->create([
+            'client_id' => $this->client->id,
         ]);
 
+        $result = $this->service->getUserAppointments($this->client);
+
+        $this->assertCount(3, $result);
         $this->assertEquals(
-            $startsAt->toRfc3339String(),
-            $updatedAppointment->starts_at
+            $appointments->pluck('id')->sort()->values(),
+            $result->pluck('id')->sort()->values()
         );
     }
 
-    public function test_updates_google_calendar_when_dates_change()
+    #[Test]
+    public function it_retrieves_appointment_with_all_relations()
     {
-        $artist = User::factory()->create(['google_calendar_id' => 'calendar_id']);
-        $appointment = Appointment::factory()
-            ->for($artist, 'artist')
-            ->create(['google_event_id' => 'event_id']);
+        $conversation = Conversation::factory()
+            ->withDetails()
+            ->create([
+                'artist_id' => $this->artist->id,
+                'client_id' => $this->client->id,
+            ]);
 
-        $this->calendarService
-            ->shouldReceive('updateEvent')
-            ->once()
-            ->andReturn(true);
-
-        $this->service->updateAppointment($appointment, [
-            'starts_at' => now()->addDays(2),
+        $appointment = Appointment::factory()->create([
+            'artist_id' => $this->artist->id,
+            'client_id' => $this->client->id,
+            'conversation_id' => $conversation->id,
         ]);
-    }
 
-    public function test_throws_exception_when_google_calendar_update_fails()
-    {
-        $artist = User::factory()->create(['google_calendar_id' => 'calendar_id']);
-        $appointment = Appointment::factory()
-            ->for($artist, 'artist')
-            ->create(['google_event_id' => 'event_id']);
+        $loadedAppointment = $this->service->getAppointmentWithDetails($appointment);
 
-        $this->calendarService
-            ->shouldReceive('updateEvent')
-            ->once()
-            ->andReturn(false);
-
-        $this->expectException(GoogleCalendarSyncException::class);
-
-        $this->service->updateAppointment($appointment, [
-            'starts_at' => now()->addDays(2),
-        ]);
-    }
-
-    public function test_can_delete_appointment()
-    {
-        $appointment = Appointment::factory()->create();
-
-        $this->service->deleteAppointment($appointment);
-
-        $this->assertDatabaseMissing('appointments', ['id' => $appointment->id]);
-    }
-
-    public function test_deletes_google_calendar_event_when_deleting_appointment()
-    {
-        $artist = User::factory()->create(['google_calendar_id' => 'calendar_id']);
-        $appointment = Appointment::factory()
-            ->for($artist, 'artist')
-            ->create(['google_event_id' => 'event_id']);
-
-        $this->calendarService
-            ->shouldReceive('deleteEvent')
-            ->once()
-            ->andReturn(true);
-
-        $this->service->deleteAppointment($appointment);
-
-        $this->assertDatabaseMissing('appointments', ['id' => $appointment->id]);
-    }
-
-    public function test_throws_exception_when_google_calendar_delete_fails()
-    {
-        $artist = User::factory()->create(['google_calendar_id' => 'calendar_id']);
-        $appointment = Appointment::factory()
-            ->for($artist, 'artist')
-            ->create(['google_event_id' => 'event_id']);
-
-        $this->calendarService
-            ->shouldReceive('deleteEvent')
-            ->once()
-            ->andReturn(false);
-
-        $this->expectException(GoogleCalendarSyncException::class);
-
-        $this->service->deleteAppointment($appointment);
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        Mockery::close();
+        $this->assertTrue($loadedAppointment->relationLoaded('artist'));
+        $this->assertTrue($loadedAppointment->relationLoaded('client'));
+        $this->assertTrue($loadedAppointment->relationLoaded('conversation'));
+        $this->assertTrue($loadedAppointment->conversation->relationLoaded('details'));
     }
 }
