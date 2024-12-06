@@ -48,9 +48,10 @@ class AppointmentService
     public function updateAppointment(Appointment $appointment, array $data): Appointment
     {
         return DB::transaction(function () use ($appointment, $data) {
-            $changedAttributes = array_intersect_key($data, $appointment->getDirty());
-            
             $appointment->fill($data);
+            
+            $changedAttributes = $appointment->getDirty();
+            
             $appointment->save();
 
             AppointmentUpdated::dispatch($appointment, $changedAttributes);
