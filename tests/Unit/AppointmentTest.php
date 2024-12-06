@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Conversation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Carbon\Carbon;
 
 class AppointmentTest extends TestCase
 {
@@ -57,8 +58,14 @@ class AppointmentTest extends TestCase
                 'ends_at' => $end,
             ]);
 
-        $this->assertEquals($start->timestamp, $appointment->starts_at->timestamp);
-        $this->assertEquals($end->timestamp, $appointment->ends_at->timestamp);
+        $this->assertEquals(
+            $start->toRfc3339String(),
+            $appointment->starts_at
+        );
+        $this->assertEquals(
+            $end->toRfc3339String(),
+            $appointment->ends_at
+        );
     }
 
     public function test_appointment_can_access_reference_photos_through_conversation(): void

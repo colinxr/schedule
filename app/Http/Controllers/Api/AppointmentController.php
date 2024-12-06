@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use App\Http\Resources\AppointmentResource;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
@@ -19,12 +20,11 @@ class AppointmentController extends Controller
 
     public function __construct(private AppointmentService $appointmentService)
     {
-        $this->authorizeResource(Appointment::class, 'appointment');
     }
 
     public function index(): JsonResponse
     {
-        $appointments = $this->appointmentService->getUserAppointments(auth()->user());
+        $appointments = $this->appointmentService->getUserAppointments(Auth::user());
         return response()->json([
             'data' => AppointmentResource::collection($appointments->load(['artist', 'client']))
         ]);
@@ -32,6 +32,7 @@ class AppointmentController extends Controller
 
     public function show(Appointment $appointment): JsonResponse
     {
+        $this->authorize('view', $appointment);
         return response()->json([
             'data' => new AppointmentResource($appointment)
         ]);
@@ -39,11 +40,13 @@ class AppointmentController extends Controller
 
     public function store(StoreAppointmentRequest $request): JsonResponse
     {
+        $this->authorize('create', Appointment::class);
+        
         $conversation = Conversation::findOrFail($request->conversation_id);
         
         $appointment = $this->appointmentService->createAppointment(
             $request->validated(),
-            auth()->user(),
+            Auth::user(),
             $conversation
         );
 
@@ -54,6 +57,8 @@ class AppointmentController extends Controller
 
     public function update(UpdateAppointmentRequest $request, Appointment $appointment): JsonResponse
     {
+        $this->authorize('update', $appointment);
+        
         $appointment = $this->appointmentService->updateAppointment($appointment, $request->validated());
 
         return response()->json([
@@ -63,6 +68,8 @@ class AppointmentController extends Controller
 
     public function destroy(Appointment $appointment): Response
     {
+        $this->authorize('delete', $appointment);
+        
         $this->appointmentService->deleteAppointment($appointment);
 
         return response()->noContent();
