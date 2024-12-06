@@ -16,7 +16,7 @@ class ConversationDetailsObserver
     public function created(ConversationDetails $details): void
     {
         // Load necessary relationships
-        $details->conversation->load('client');
+        $details->conversation->load(['client', 'artist.profile']);
 
         // Send the new conversation notification
         $details->conversation->artist->notify(new NewConversationNotification($details->conversation));

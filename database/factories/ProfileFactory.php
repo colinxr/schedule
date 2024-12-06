@@ -21,22 +21,25 @@ class ProfileFactory extends Factory
                     'email' => true,
                     'push' => true,
                 ],
-                'theme' => 'light',
             ],
         ];
     }
 
-    public function withoutSettings(): self
-    {
-        return $this->state(fn (array $attributes) => [
-            'settings' => null,
-        ]);
-    }
-
     public function withCustomSettings(array $settings): self
     {
-        return $this->state(fn (array $attributes) => [
-            'settings' => $settings,
-        ]);
+        return $this->state(function (array $attributes) use ($settings) {
+            return [
+                'settings' => $settings,
+            ];
+        });
+    }
+
+    public function withoutSettings(): self
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'settings' => null,
+            ];
+        });
     }
 } 
