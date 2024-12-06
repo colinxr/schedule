@@ -53,4 +53,9 @@ class User extends Authenticatable implements AuthenticatableContract
                 $query->where('client_id', $this->id);
             });
     }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class);
+    }
 }

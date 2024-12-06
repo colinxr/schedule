@@ -382,7 +382,7 @@ class ConversationControllerTest extends TestCase
         $client = User::factory()->create(['role' => 'client']);
         
         $conversation = Conversation::factory()
-            ->has(Message::factory()->count(75)) // Create 75 messages to test pagination
+            ->has(Message::factory()->count(75)) // Create 75 messages
             ->has(ConversationDetails::factory()->state([
                 'phone' => '1234567890',
                 'email' => 'client@example.com',
@@ -392,6 +392,10 @@ class ConversationControllerTest extends TestCase
                 'artist_id' => $artist->id,
                 'client_id' => $client->id
             ]);
+
+        // Get total message count (75 + 1 initial message)
+        $totalMessages = $conversation->messages()->count();
+        $this->assertEquals(76, $totalMessages, 'Should have 76 messages (75 factory + 1 initial)');
 
         $this->actingAs($artist);
         
@@ -436,8 +440,10 @@ class ConversationControllerTest extends TestCase
         $nextPageUrl = $response->json('data.messages.next_page_url');
         $response = $this->getJson($nextPageUrl);
         
+        $remainingMessages = $totalMessages - 50; // Calculate remaining messages after first page
+        
         $response->assertOk()
-            ->assertJsonCount(25, 'data.messages.data') // Should have remaining 25 messages
+            ->assertJsonCount($remainingMessages, 'data.messages.data') // Should have remaining 26 messages
             ->assertJsonPath('data.messages.next_page_url', null);
     }
 
