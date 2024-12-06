@@ -15,21 +15,13 @@ class ConversationDetailsObserver
      */
     public function created(ConversationDetails $details): void
     {
-        Log::info('ConversationDetailsObserver created event fired', [
-            'details_id' => $details->id,
-            'conversation_id' => $details->conversation_id,
-            'description' => $details->description,
-            'has_conversation' => isset($details->conversation),
-        ]);
-
         // Load necessary relationships
-        if (!$details->relationLoaded('conversation')) {
-            $details->load(['conversation.client', 'conversation.artist.profile']);
-        }
+        $details->conversation->load('client');
 
         // Send the new conversation notification
         $details->conversation->artist->notify(new NewConversationNotification($details->conversation));
 
+        // Create initial message if description exists
         if ($details->description) {
             $messageData = [
                 'conversation_id' => $details->conversation_id,
@@ -37,8 +29,6 @@ class ConversationDetailsObserver
                 'sender_type' => User::class,
                 'sender_id' => $details->conversation->client_id,
             ];
-
-            Log::info('Creating message with data', $messageData);
 
             try {
                 Message::create($messageData);

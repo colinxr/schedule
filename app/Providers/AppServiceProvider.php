@@ -30,7 +30,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Log::info('Registering ConversationDetails observer');
         ConversationDetails::observe(ConversationDetailsObserver::class);
         Conversation::observe(ConversationObserver::class);
         Message::observe(MessageObserver::class);
