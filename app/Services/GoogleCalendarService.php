@@ -77,12 +77,10 @@ class GoogleCalendarService
                 'summary' => $this->getEventSummary($appointment),
                 'description' => $this->getEventDescription($appointment),
                 'start' => [
-                    'dateTime' => $appointment->starts_at->toRfc3339String(),
-                    'timeZone' => config('app.timezone'),
+                    'dateTime' => $appointment->starts_at,
                 ],
                 'end' => [
-                    'dateTime' => $appointment->ends_at->toRfc3339String(),
-                    'timeZone' => config('app.timezone'),
+                    'dateTime' => $appointment->ends_at,
                 ],
                 'attendees' => [
                     ['email' => $appointment->client->email],
@@ -130,13 +128,11 @@ class GoogleCalendarService
             $event->setDescription($this->getEventDescription($appointment));
             
             $event->setStart(new Google_Service_Calendar_EventDateTime([
-                'dateTime' => $appointment->starts_at->toRfc3339String(),
-                'timeZone' => config('app.timezone'),
+                'dateTime' => $appointment->starts_at,
             ]));
             
             $event->setEnd(new Google_Service_Calendar_EventDateTime([
-                'dateTime' => $appointment->ends_at->toRfc3339String(),
-                'timeZone' => config('app.timezone'),
+                'dateTime' => $appointment->ends_at,
             ]));
 
             $service->events->update($artist->google_calendar_id, $event->getId(), $event);

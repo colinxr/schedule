@@ -8,90 +8,63 @@ use App\Http\Requests\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Conversation;
 use App\Services\AppointmentService;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use App\Http\Resources\AppointmentResource;
 
 class AppointmentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(
-        private AppointmentService $appointmentService
-    ) {}
-
-    public function index()
+    public function __construct(private AppointmentService $appointmentService)
     {
-        $appointments = $this->appointmentService->getUserAppointments(Auth::user());
-        return response()->json(['data' => $appointments]);
+        $this->authorizeResource(Appointment::class, 'appointment');
     }
 
-    public function show(Appointment $appointment)
+    public function index(): JsonResponse
     {
-        $this->authorize('view', $appointment);
-
-        $appointment = $this->appointmentService->getAppointmentWithDetails($appointment);
-        return response()->json(['data' => $appointment]);
+        $appointments = $this->appointmentService->getUserAppointments(auth()->user());
+        return response()->json([
+            'data' => AppointmentResource::collection($appointments->load(['artist', 'client']))
+        ]);
     }
 
-    public function store(StoreAppointmentRequest $request)
+    public function show(Appointment $appointment): JsonResponse
     {
-        try {
-            $conversation = Conversation::findOrFail($request->validated('conversation_id'));
-            
-            $appointment = $this->appointmentService->createAppointment(
-                $request->validated(),
-                Auth::user(),
-                $conversation
-            );
-
-            return response()->json(['data' => $appointment], Response::HTTP_CREATED);
-
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Conversation not found'
-            ], Response::HTTP_NOT_FOUND);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create appointment',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        return response()->json([
+            'data' => new AppointmentResource($appointment)
+        ]);
     }
 
-    public function update(UpdateAppointmentRequest $request, Appointment $appointment)
+    public function store(StoreAppointmentRequest $request): JsonResponse
     {
-        try {
-            $appointment = $this->appointmentService->updateAppointment(
-                $appointment,
-                $request->validated()
-            );
+        $conversation = Conversation::findOrFail($request->conversation_id);
+        
+        $appointment = $this->appointmentService->createAppointment(
+            $request->validated(),
+            auth()->user(),
+            $conversation
+        );
 
-            return response()->json(['data' => $appointment]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to update appointment',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        return response()->json([
+            'data' => new AppointmentResource($appointment)
+        ], Response::HTTP_CREATED);
     }
 
-    public function destroy(Appointment $appointment)
+    public function update(UpdateAppointmentRequest $request, Appointment $appointment): JsonResponse
     {
-        $this->authorize('delete', $appointment);
+        $appointment = $this->appointmentService->updateAppointment($appointment, $request->validated());
 
-        try {
-            $this->appointmentService->deleteAppointment($appointment);
-            return response()->json(null, Response::HTTP_NO_CONTENT);
+        return response()->json([
+            'data' => new AppointmentResource($appointment)
+        ]);
+    }
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to delete appointment',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+    public function destroy(Appointment $appointment): Response
+    {
+        $this->appointmentService->deleteAppointment($appointment);
+
+        return response()->noContent();
     }
 } 

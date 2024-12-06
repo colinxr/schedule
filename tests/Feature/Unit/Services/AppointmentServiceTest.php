@@ -12,6 +12,7 @@ use App\Exceptions\Appointment\GoogleCalendarSyncException;
 use App\Exceptions\Appointment\AppointmentCreationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Carbon\Carbon;
 
 class AppointmentServiceTest extends TestCase
 {
@@ -69,9 +70,13 @@ class AppointmentServiceTest extends TestCase
             ->for($artist, 'artist')
             ->create();
 
+        $startsAt = now()->addDay();
+        $endsAt = $startsAt->copy()->addHours(2);
+
         $appointmentData = [
-            'starts_at' => now()->addDay(),
-            'ends_at' => now()->addDay()->addHours(2),
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'conversation_id' => $conversation->id,
         ];
 
         $appointment = $this->service->createAppointment($appointmentData, $artist, $conversation);
@@ -80,7 +85,20 @@ class AppointmentServiceTest extends TestCase
             'id' => $appointment->id,
             'artist_id' => $artist->id,
             'client_id' => $conversation->client_id,
+            'conversation_id' => $conversation->id,
+            'starts_at' => $startsAt->toDateTimeString(),
+            'ends_at' => $endsAt->toDateTimeString(),
         ]);
+
+        // Test the RFC3339 accessors
+        $this->assertEquals(
+            $startsAt->toRfc3339String(),
+            $appointment->starts_at
+        );
+        $this->assertEquals(
+            $endsAt->toRfc3339String(),
+            $appointment->ends_at
+        );
     }
 
     public function test_can_create_appointment_with_google_calendar()
@@ -94,9 +112,13 @@ class AppointmentServiceTest extends TestCase
             ->for($artist, 'artist')
             ->create();
 
+        $startsAt = now()->addDay();
+        $endsAt = $startsAt->copy()->addHours(2);
+
         $appointmentData = [
-            'starts_at' => now()->addDay(),
-            'ends_at' => now()->addDay()->addHours(2),
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'conversation_id' => $conversation->id,
         ];
 
         $this->calendarService
@@ -109,6 +131,9 @@ class AppointmentServiceTest extends TestCase
         $this->assertDatabaseHas('appointments', [
             'id' => $appointment->id,
             'google_event_id' => 'event_id',
+            'conversation_id' => $conversation->id,
+            'starts_at' => $startsAt->toDateTimeString(),
+            'ends_at' => $endsAt->toDateTimeString(),
         ]);
     }
 
@@ -133,6 +158,7 @@ class AppointmentServiceTest extends TestCase
         $this->service->createAppointment([
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDay()->addHours(2),
+            'conversation_id' => $conversation->id,
         ], $artist, $conversation);
     }
 
@@ -146,6 +172,7 @@ class AppointmentServiceTest extends TestCase
         $this->service->createAppointment([
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDay()->addHours(2),
+            'conversation_id' => $conversation->id,
         ], $client, $conversation);
     }
 
@@ -159,19 +186,22 @@ class AppointmentServiceTest extends TestCase
         $this->service->createAppointment([
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDay()->addHours(2),
+            'conversation_id' => $conversation->id,
         ], $artist, $conversation);
     }
 
     public function test_can_update_appointment()
     {
+        $startsAt = now()->addDays(2);
         $appointment = Appointment::factory()->create();
-        $newData = ['starts_at' => now()->addDays(2)];
 
-        $updatedAppointment = $this->service->updateAppointment($appointment, $newData);
+        $updatedAppointment = $this->service->updateAppointment($appointment, [
+            'starts_at' => $startsAt,
+        ]);
 
         $this->assertEquals(
-            $newData['starts_at']->toDateTimeString(),
-            $updatedAppointment->starts_at->toDateTimeString()
+            $startsAt->toRfc3339String(),
+            $updatedAppointment->starts_at
         );
     }
 
