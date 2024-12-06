@@ -7,6 +7,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 abstract class TestCase extends BaseTestCase
 {
-    use CreatesApplication;
+    // use CreatesApplication;
     use RefreshDatabase;
 }
