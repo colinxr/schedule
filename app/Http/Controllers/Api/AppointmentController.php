@@ -7,60 +7,71 @@ use App\Http\Requests\StoreAppointmentRequest;
 use App\Http\Requests\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Conversation;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
+use App\Services\AppointmentService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use App\Http\Resources\AppointmentResource;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index()
+    public function __construct(private AppointmentService $appointmentService)
     {
-        $user = Auth::user();
-        $appointments = $user->role === 'artist' 
-            ? $user->appointments()->with('client')->latest()->get()
-            : $user->clientAppointments()->with('artist')->latest()->get();
-
-        return response()->json(['data' => $appointments]);
     }
 
-    public function show(Appointment $appointment)
+    public function index(): JsonResponse
+    {
+        $appointments = $this->appointmentService->getUserAppointments(Auth::user());
+        return response()->json([
+            'data' => AppointmentResource::collection($appointments->load(['artist', 'client']))
+        ]);
+    }
+
+    public function show(Appointment $appointment): JsonResponse
     {
         $this->authorize('view', $appointment);
+        return response()->json([
+            'data' => new AppointmentResource($appointment)
+        ]);
+    }
+
+    public function store(StoreAppointmentRequest $request): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+        
+        $conversation = Conversation::findOrFail($request->conversation_id);
+        
+        $appointment = $this->appointmentService->createAppointment(
+            $request->validated(),
+            Auth::user(),
+            $conversation
+        );
 
         return response()->json([
-            'data' => $appointment->load(['artist', 'client', 'conversation.details'])
+            'data' => new AppointmentResource($appointment)
+        ], Response::HTTP_CREATED);
+    }
+
+    public function update(UpdateAppointmentRequest $request, Appointment $appointment): JsonResponse
+    {
+        $this->authorize('update', $appointment);
+        
+        $appointment = $this->appointmentService->updateAppointment($appointment, $request->validated());
+
+        return response()->json([
+            'data' => new AppointmentResource($appointment)
         ]);
     }
 
-    public function store(StoreAppointmentRequest $request)
-    {
-        $validated = $request->validated();
-        $conversation = Conversation::findOrFail($validated['conversation_id']);
-
-        $appointment = Appointment::create([
-            ...$validated,
-            'artist_id' => Auth::id(),
-            'client_id' => $conversation->client_id,
-        ]);
-
-        return response()->json(['data' => $appointment], Response::HTTP_CREATED);
-    }
-
-    public function update(UpdateAppointmentRequest $request, Appointment $appointment)
-    {
-        $appointment->update($request->validated());
-
-        return response()->json(['data' => $appointment]);
-    }
-
-    public function destroy(Appointment $appointment)
+    public function destroy(Appointment $appointment): Response
     {
         $this->authorize('delete', $appointment);
+        
+        $this->appointmentService->deleteAppointment($appointment);
 
-        $appointment->delete();
-
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        return response()->noContent();
     }
 } 
