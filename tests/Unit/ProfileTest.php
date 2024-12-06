@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Profile;
 use App\Models\Message;
 use App\Models\Conversation;
+use App\Models\ConversationDetails;
 use App\Notifications\NewMessageNotification;
 use App\Notifications\NewConversationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,8 +125,8 @@ class ProfileTest extends TestCase
 
     public function test_email_notifications_are_sent_when_enabled(): void
     {
-        Notification::fake();
-
+        $this->withoutExceptionHandling();
+        
         // Create artist with email notifications enabled
         $artist = User::factory()
             ->has(Profile::factory()->state([
@@ -135,9 +136,14 @@ class ProfileTest extends TestCase
 
         $client = User::factory()->create(['role' => 'client']);
 
+        // Fake notifications after creating users but before creating conversation
+        Notification::fake();
+
+        // Create conversation (ConversationDetails will be created automatically)
         $conversation = Conversation::factory()
             ->for($artist, 'artist')
             ->for($client, 'client')
+            ->withDetails()
             ->create();
 
         // Assert notification was sent via email

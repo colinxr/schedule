@@ -15,6 +15,11 @@ class ConversationDetailsObserver
      */
     public function created(ConversationDetails $details): void
     {
+        Log::info('ConversationDetailsObserver: created method called', [
+            'conversation_id' => $details->conversation_id,
+            'description' => $details->description,
+        ]);
+
         // Load necessary relationships
         $details->conversation->load(['client', 'artist.profile']);
 

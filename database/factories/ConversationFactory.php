@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
+use App\Models\ConversationDetails;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ConversationFactory extends Factory
@@ -23,7 +24,8 @@ class ConversationFactory extends Factory
     public function withDetails(): static
     {
         return $this->afterCreating(function (Conversation $conversation) {
-            $conversation->details()->create([
+            ConversationDetails::create([
+                'conversation_id' => $conversation->id,
                 'email' => fake()->email(),
                 'description' => fake()->sentence(),
                 'reference_images' => null,
