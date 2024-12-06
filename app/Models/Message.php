@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Message extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'conversation_id',
         'content',
         'sender_type',
         'sender_id',
@@ -27,9 +29,9 @@ class Message extends Model
         return $this->belongsTo(Conversation::class);
     }
 
-    public function sender(): BelongsTo
+    public function sender(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo('sender', 'sender_type', 'sender_id');
     }
 
     public function markAsRead(): void
