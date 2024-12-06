@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Events\AppointmentCreated;
+use App\Events\AppointmentUpdated;
+use App\Events\AppointmentDeleted;
+use App\Listeners\SyncAppointmentToGoogleCalendar;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -12,8 +16,14 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        \App\Events\ConversationCreated::class => [
-            \App\Listeners\CreateClientUser::class,
+        AppointmentCreated::class => [
+            SyncAppointmentToGoogleCalendar::class . '@handleCreated',
+        ],
+        AppointmentUpdated::class => [
+            SyncAppointmentToGoogleCalendar::class . '@handleUpdated',
+        ],
+        AppointmentDeleted::class => [
+            SyncAppointmentToGoogleCalendar::class . '@handleDeleted',
         ],
     ];
 
