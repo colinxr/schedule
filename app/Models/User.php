@@ -58,4 +58,14 @@ class User extends Authenticatable implements AuthenticatableContract
     {
         return $this->hasOne(Profile::class);
     }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'artist_id');
+    }
+
+    public function clientAppointments()
+    {
+        return $this->hasMany(Appointment::class, 'client_id');
+    }
 }
