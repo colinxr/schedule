@@ -26,6 +26,10 @@ class User extends Authenticatable implements AuthenticatableContract
         'remember_token',
     ];
 
+    protected $appends = [
+        'name'
+    ];
+
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',

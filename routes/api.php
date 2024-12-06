@@ -15,6 +15,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('conversations', [ConversationController::class, 'index']);
     Route::get('conversations/{conversation}', [ConversationController::class, 'show']);
     
+    Route::get('appointments', [AppointmentController::class, 'index']);
+    Route::get('appointments/{appointment}', [AppointmentController::class, 'show']);
     Route::post('appointments', [AppointmentController::class, 'store']);
     Route::put('appointments/{appointment}', [AppointmentController::class, 'update']);
     Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy']);

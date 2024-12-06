@@ -15,6 +15,25 @@ class AppointmentController extends Controller
 {
     use AuthorizesRequests;
 
+    public function index()
+    {
+        $user = Auth::user();
+        $appointments = $user->role === 'artist' 
+            ? $user->appointments()->with('client')->latest()->get()
+            : $user->clientAppointments()->with('artist')->latest()->get();
+
+        return response()->json(['data' => $appointments]);
+    }
+
+    public function show(Appointment $appointment)
+    {
+        $this->authorize('view', $appointment);
+
+        return response()->json([
+            'data' => $appointment->load(['artist', 'client', 'conversation.details'])
+        ]);
+    }
+
     public function store(StoreAppointmentRequest $request)
     {
         $validated = $request->validated();
