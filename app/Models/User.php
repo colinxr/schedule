@@ -26,6 +26,10 @@ class User extends Authenticatable implements AuthenticatableContract
         'remember_token',
     ];
 
+    protected $appends = [
+        'name'
+    ];
+
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
@@ -57,5 +61,15 @@ class User extends Authenticatable implements AuthenticatableContract
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'artist_id');
+    }
+
+    public function clientAppointments()
+    {
+        return $this->hasMany(Appointment::class, 'client_id');
     }
 }

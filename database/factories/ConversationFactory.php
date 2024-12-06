@@ -16,6 +16,7 @@ class ConversationFactory extends Factory
     {
         return [
             'artist_id' => User::factory()->create(['role' => 'artist'])->id,
+            'client_id' => User::factory()->create(['role' => 'client'])->id,
             'status' => 'pending',
             'last_message_at' => now(),
         ];
