@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\GoogleCalendarController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\WorkScheduleController;
+use App\Http\Controllers\Api\AvailabilityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,4 +48,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/schedule', [WorkScheduleController::class, 'store']);
     Route::put('/schedule/{workSchedule}', [WorkScheduleController::class, 'update']);
     Route::delete('/schedule/{workSchedule}', [WorkScheduleController::class, 'destroy']);
+
+    // Artist Availability
+    Route::get('/artists/{artist}/available-slots', [AvailabilityController::class, 'getAvailableSlots'])
+        ->name('artists.available-slots')
+        ->middleware('throttle:60,1'); // Add rate limiting to prevent abuse
 });
