@@ -21,6 +21,8 @@ class GetAvailableSlotsRequest extends FormRequest
             'timezone' => ['sometimes', 'string', 'timezone'],
             'preferred_time' => ['sometimes', 'string', 'in:morning,afternoon,evening'],
             'emergency' => ['sometimes', 'boolean'],
+            'buffer' => ['sometimes', 'integer', 'min:0', 'max:120'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];
     }
 
@@ -32,6 +34,8 @@ class GetAvailableSlotsRequest extends FormRequest
             'date.after_or_equal' => 'Please select today or a future date',
             'per_page.max' => 'Cannot request more than 50 slots per page',
             'page.min' => 'Page number must be at least 1',
+            'buffer.max' => 'Buffer time cannot be more than 2 hours',
+            'limit.max' => 'Cannot request more than 100 slots at once',
         ];
     }
 } 

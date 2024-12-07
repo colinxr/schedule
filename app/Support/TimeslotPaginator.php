@@ -3,13 +3,12 @@
 namespace App\Support;
 
 use Illuminate\Support\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 
-class TimeslotPaginator extends LengthAwarePaginator
+class TimeslotPaginator
 {
     /**
-     * Create a new paginator for time slots.
-     *
+     * Paginate an array of timeslots
+     * 
      * @param array $slots
      * @param int $page
      * @param int $perPage
@@ -20,27 +19,22 @@ class TimeslotPaginator extends LengthAwarePaginator
         $collection = Collection::make($slots);
         
         $total = $collection->count();
+        $totalPages = $total > 0 ? max(1, ceil($total / $perPage)) : 0;
+        $page = min($page, max(1, $totalPages));
         
-        // Get items for current page
-        $items = $collection->forPage($page, $perPage);
-        
-        $paginator = new static(
-            $items,
-            $total,
-            $perPage,
-            $page
-        );
+        $offset = ($page - 1) * $perPage;
+        $items = $collection->slice($offset, $perPage)->values();
 
         return [
-            'data' => $items->values()->all(),
+            'data' => $items->all(),
             'pagination' => [
-                'current_page' => $paginator->currentPage(),
+                'current_page' => $page,
                 'per_page' => $perPage,
                 'total' => $total,
-                'total_pages' => $paginator->lastPage(),
-                'has_more_pages' => $paginator->hasMorePages(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem()
+                'total_pages' => $totalPages,
+                'has_more_pages' => $page < $totalPages,
+                'from' => $total > 0 ? $offset + 1 : 0,
+                'to' => min($offset + $perPage, $total)
             ]
         ];
     }

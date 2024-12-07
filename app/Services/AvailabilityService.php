@@ -19,16 +19,18 @@ class AvailabilityService
         User $artist,
         int $duration,
         Carbon $date,
-        int $limit = 5,
+        ?int $limit = null,
         ?int $buffer = 0
     ): Collection {
         // Get the artist's work schedule from cache
         $workSchedules = WorkSchedule::getCachedSchedule($artist->id)
-            ->filter(function ($schedule) use ($date) {
-                return $schedule->day_of_week >= $date->dayOfWeek ||
-                       $schedule->day_of_week < $date->copy()->addDays(7)->dayOfWeek;
-            })
             ->keyBy('day_of_week');
+
+        // If requesting slots for a specific date and there's no work schedule for that day,
+        // return empty collection immediately
+        if (!$workSchedules->has($date->dayOfWeek)) {
+            return collect();
+        }
 
         // Cache key for appointments
         $cacheKey = "appointments:{$artist->id}:{$date->format('Y-m-d')}";
@@ -51,7 +53,7 @@ class AvailabilityService
         $currentDate = $date->copy()->startOfDay();
         $endDate = $date->copy()->addDays(7)->endOfDay();
 
-        while ($currentDate->lte($endDate) && $availableSlots->count() < $limit) {
+        while ($currentDate->lte($endDate) && ($limit === null || $availableSlots->count() < $limit)) {
             $daySchedule = $workSchedules->get($currentDate->dayOfWeek);
             
             // Skip if no work schedule for this day
@@ -74,7 +76,7 @@ class AvailabilityService
 
             $availableSlots = $availableSlots->concat($daySlots);
             
-            if ($availableSlots->count() >= $limit) {
+            if ($limit !== null && $availableSlots->count() >= $limit) {
                 $availableSlots = $availableSlots->take($limit);
                 break;
             }
@@ -160,6 +162,10 @@ class AvailabilityService
         Carbon $start2,
         Carbon $end2
     ): bool {
-        return $start1 < $end2 && $start2 < $end1;
+        // Check if either slot starts during the other slot
+        // or if one slot completely contains the other
+        return ($start1 >= $start2 && $start1 < $end2) ||
+               ($end1 > $start2 && $end1 <= $end2) ||
+               ($start1 <= $start2 && $end1 >= $end2);
     }
 } 

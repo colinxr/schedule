@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Availability\GetAvailableSlotsRequest;
-use App\Jobs\CalculateArtistAvailability;
 use App\Models\User;
 use App\Services\AvailabilityService;
 use App\Support\TimeslotPaginator;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Cache;
 
 class AvailabilityController extends Controller
 {
@@ -29,32 +27,32 @@ class AvailabilityController extends Controller
         $duration = $request->validated('duration');
         $page = $request->input('page', 1);
         $perPage = $request->input('per_page', 10);
+        $buffer = $request->input('buffer', 0);
+        $limit = $request->input('limit');
 
-        // Try to get pre-computed slots from cache
-        $cacheKey = "artist_availability:{$artist->id}";
-        $cachedAvailability = Cache::get($cacheKey);
+        // Calculate available slots
+        $slots = $this->availabilityService->findAvailableSlots(
+            artist: $artist,
+            duration: $duration,
+            date: $date,
+            limit: $limit,
+            buffer: $buffer
+        );
 
-        if ($cachedAvailability && isset($cachedAvailability[$date->format('Y-m-d')][$duration])) {
-            $slots = $cachedAvailability[$date->format('Y-m-d')][$duration];
-        } else {
-            // If not in cache, calculate on-demand and dispatch background job to update cache
-            $slots = $this->availabilityService->findAvailableSlots(
-                artist: $artist,
-                duration: $duration,
-                date: $date,
-                limit: null // Get all slots for the day
-            );
-
-            // Dispatch job to update cache in background
-            CalculateArtistAvailability::dispatch($artist);
-        }
-
-        // Paginate the slots
-        $paginatedResults = TimeslotPaginator::paginate($slots, $page, $perPage);
+        // Convert collection to array and paginate
+        $paginatedResults = TimeslotPaginator::paginate($slots->toArray(), $page, $perPage);
 
         return response()->json([
             'available_slots' => $paginatedResults['data'],
-            'pagination' => $paginatedResults['pagination']
+            'pagination' => [
+                'total' => $paginatedResults['pagination']['total'],
+                'total_pages' => $paginatedResults['pagination']['total_pages'],
+                'has_more_pages' => $paginatedResults['pagination']['has_more_pages'],
+                'current_page' => $paginatedResults['pagination']['current_page'],
+                'per_page' => $paginatedResults['pagination']['per_page'],
+                'from' => $paginatedResults['pagination']['from'],
+                'to' => $paginatedResults['pagination']['to']
+            ]
         ]);
     }
 } 
