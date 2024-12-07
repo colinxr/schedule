@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Appointment;
+use App\Models\WorkSchedule;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class AvailabilityService
 {
@@ -20,23 +22,30 @@ class AvailabilityService
         int $limit = 5,
         ?int $buffer = 0
     ): Collection {
-        // Get the artist's work schedule for the next 7 days
-        $workSchedules = $artist->workSchedules()
-            ->select(['id', 'user_id', 'day_of_week', 'start_time', 'end_time'])
-            ->where(function ($query) use ($date) {
-                $query->where('day_of_week', '>=', $date->dayOfWeek)
-                    ->orWhere('day_of_week', '<', $date->copy()->addDays(7)->dayOfWeek);
+        // Get the artist's work schedule from cache
+        $workSchedules = WorkSchedule::getCachedSchedule($artist->id)
+            ->filter(function ($schedule) use ($date) {
+                return $schedule->day_of_week >= $date->dayOfWeek ||
+                       $schedule->day_of_week < $date->copy()->addDays(7)->dayOfWeek;
             })
-            ->get()
             ->keyBy('day_of_week');
 
-        // Get existing appointments for the next 7 days
-        $existingAppointments = $artist->appointments()
-            ->select(['id', 'artist_id', 'starts_at', 'ends_at'])
-            ->where('starts_at', '>=', $date->copy()->startOfDay())
-            ->where('starts_at', '<=', $date->copy()->addDays(7)->endOfDay())
-            ->orderBy('starts_at')
-            ->get();
+        // Cache key for appointments
+        $cacheKey = "appointments:{$artist->id}:{$date->format('Y-m-d')}";
+        
+        // Get existing appointments from cache or database
+        $existingAppointments = Cache::remember(
+            $cacheKey,
+            now()->addMinutes(5),
+            function () use ($artist, $date) {
+                return $artist->appointments()
+                    ->select(['id', 'artist_id', 'starts_at', 'ends_at'])
+                    ->where('starts_at', '>=', $date->copy()->startOfDay())
+                    ->where('starts_at', '<=', $date->copy()->addDays(7)->endOfDay())
+                    ->orderBy('starts_at')
+                    ->get();
+            }
+        );
 
         $availableSlots = collect();
         $currentDate = $date->copy()->startOfDay();
@@ -109,21 +118,25 @@ class AvailabilityService
             $dayEnd->subMinutes($duration)
         ));
 
-        return $intervals->filter(function ($startTime) use ($appointments, $duration, $buffer) {
+        // Pre-calculate appointment time ranges for better performance
+        $appointmentRanges = $appointments->map(function ($appointment) use ($buffer) {
+            $start = Carbon::parse($appointment->starts_at);
+            $end = Carbon::parse($appointment->ends_at);
+            
+            if ($buffer > 0) {
+                $start = $start->copy()->subMinutes($buffer);
+                $end = $end->copy()->addMinutes($buffer);
+            }
+            
+            return [$start, $end];
+        });
+
+        return $intervals->filter(function ($startTime) use ($duration, $appointmentRanges) {
             $proposedStart = $startTime->copy();
             $proposedEnd = $startTime->copy()->addMinutes($duration);
 
-            // Add buffer before and after if specified
-            if ($buffer > 0) {
-                $proposedStart = $proposedStart->subMinutes($buffer);
-                $proposedEnd = $proposedEnd->addMinutes($buffer);
-            }
-
             // Check if this slot overlaps with any existing appointments
-            foreach ($appointments as $appointment) {
-                $appointmentStart = Carbon::parse($appointment->starts_at);
-                $appointmentEnd = Carbon::parse($appointment->ends_at);
-
+            foreach ($appointmentRanges as [$appointmentStart, $appointmentEnd]) {
                 if ($this->timeslotsOverlap(
                     $proposedStart,
                     $proposedEnd,
@@ -139,7 +152,7 @@ class AvailabilityService
     }
 
     /**
-     * Check if two timeslots overlap
+     * Check if two time slots overlap
      */
     private function timeslotsOverlap(
         Carbon $start1,
@@ -147,12 +160,6 @@ class AvailabilityService
         Carbon $start2,
         Carbon $end2
     ): bool {
-        // Two time slots overlap if one starts during the other
-        // or if one completely contains the other
-        return ($start1->between($start2, $end2) ||
-            $end1->between($start2, $end2) ||
-            $start2->between($start1, $end1) ||
-            $end2->between($start1, $end1)) ||
-            ($start1->equalTo($start2) || $end1->equalTo($end2));
+        return $start1 < $end2 && $start2 < $end1;
     }
 } 
