@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\GoogleCalendarController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\WorkScheduleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,4 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('disconnect', [GoogleCalendarController::class, 'disconnect']);
         Route::get('status', [GoogleCalendarController::class, 'status']);
     });
+
+    // Work Schedule Routes
+    Route::get('/schedule', [WorkScheduleController::class, 'index']);
+    Route::post('/schedule', [WorkScheduleController::class, 'store']);
+    Route::put('/schedule/{workSchedule}', [WorkScheduleController::class, 'update']);
+    Route::delete('/schedule/{workSchedule}', [WorkScheduleController::class, 'destroy']);
 });
