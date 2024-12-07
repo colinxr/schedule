@@ -18,6 +18,8 @@ class Appointment extends Model
         'starts_at',
         'ends_at',
         'google_event_id',
+        'status',
+        'notes'
     ];
 
     protected $casts = [
