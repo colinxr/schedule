@@ -27,6 +27,25 @@ class Appointment extends Model
         'ends_at' => 'datetime',
     ];
 
+    /**
+     * Get upcoming appointments for an artist
+     */
+    public function scopeUpcoming($query)
+    {
+        return $query->where('starts_at', '>=', now())
+                    ->orderBy('starts_at');
+    }
+
+    /**
+     * Get appointments for a specific date range
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->where('starts_at', '>=', $startDate)
+                    ->where('starts_at', '<=', $endDate)
+                    ->orderBy('starts_at');
+    }
+
     public function artist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'artist_id');

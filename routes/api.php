@@ -52,5 +52,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // Artist Availability
     Route::get('/artists/{artist}/available-slots', [AvailabilityController::class, 'getAvailableSlots'])
         ->name('artists.available-slots')
-        ->middleware('throttle:60,1'); // Add rate limiting to prevent abuse
+        ->middleware(['throttle:30,1', 'cache.headers:public;max_age=3600;etag']);
 });
