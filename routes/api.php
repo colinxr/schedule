@@ -1,18 +1,29 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\GoogleCalendarController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AppointmentController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 */
 
+// Auth routes
+Route::post('register', [AuthController::class, 'register']);
+Route::post('login', [AuthController::class, 'login']);
+
 Route::post('conversations', [ConversationController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes that require authentication
+    Route::post('logout', [AuthController::class, 'logout']);
+    Route::get('me', [AuthController::class, 'me']);
+
+    // Existing routes
     Route::get('conversations', [ConversationController::class, 'index']);
     Route::get('conversations/{conversation}', [ConversationController::class, 'show']);
     
