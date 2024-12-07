@@ -24,6 +24,15 @@ class WorkSchedule extends Model
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Get active schedules for a specific day
+     */
+    public function scopeForDay($query, $dayOfWeek)
+    {
+        return $query->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

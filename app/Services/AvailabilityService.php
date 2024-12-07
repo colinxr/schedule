@@ -22,6 +22,7 @@ class AvailabilityService
     ): Collection {
         // Get the artist's work schedule for the next 7 days
         $workSchedules = $artist->workSchedules()
+            ->select(['id', 'user_id', 'day_of_week', 'start_time', 'end_time'])
             ->where(function ($query) use ($date) {
                 $query->where('day_of_week', '>=', $date->dayOfWeek)
                     ->orWhere('day_of_week', '<', $date->copy()->addDays(7)->dayOfWeek);
@@ -31,6 +32,7 @@ class AvailabilityService
 
         // Get existing appointments for the next 7 days
         $existingAppointments = $artist->appointments()
+            ->select(['id', 'artist_id', 'starts_at', 'ends_at'])
             ->where('starts_at', '>=', $date->copy()->startOfDay())
             ->where('starts_at', '<=', $date->copy()->addDays(7)->endOfDay())
             ->orderBy('starts_at')
