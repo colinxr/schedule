@@ -76,23 +76,43 @@ class AppointmentSchedulingTest extends TestCase
 
     public function test_prevents_overlapping_appointments()
     {
+        $this->withoutExceptionHandling();
         $this->actingAs($this->artist);
         
-        // Given an existing 2-hour appointment
-        Appointment::factory()
+        // Given an existing 2-hour appointment from 1pm to 3pm
+        $existingAppointment = Appointment::factory()
             ->for($this->artist, 'artist')
             ->duration(120)
-            ->startsAt('next Tuesday 13:00') // 1pm - 3pm
+            ->startsAt('next Tuesday 13:00')
             ->create();
 
         // When requesting slots for a 90-minute appointment
         $response = $this->getJson("/api/artists/{$this->artist->id}/available-slots?duration=90");
 
-        // Then it should not suggest any times that overlap with existing appointment
-        $response->assertStatus(200)
-            ->assertJsonMissing([
-                'starts_at' => now()->next('Tuesday')->setTimeFromTimeString('14:00')->toDateTimeString(),
-            ]);
+        $response->assertStatus(200);
+        
+        // Get the response data
+        $slots = collect($response->json('available_slots'));
+        
+        // Verify no slots start during the existing appointment
+        $existingStart = Carbon::parse($existingAppointment->starts_at);
+        $existingEnd = Carbon::parse($existingAppointment->ends_at);
+        
+        // Assert no slots overlap with existing appointment
+        $overlappingSlots = $slots->filter(function ($slot) use ($existingStart, $existingEnd) {
+            $slotStart = Carbon::parse($slot['starts_at']);
+            $slotEnd = Carbon::parse($slot['ends_at']);
+            
+            return $slotStart->between($existingStart, $existingEnd) ||
+                $slotEnd->between($existingStart, $existingEnd) ||
+                ($slotStart->lte($existingStart) && $slotEnd->gte($existingEnd));
+        });
+        
+        $this->assertTrue(
+            $overlappingSlots->isEmpty(),
+            'Found slots that overlap with existing appointment: ' . 
+            $overlappingSlots->pluck('starts_at')->join(', ')
+        );
     }
 
     public function test_enforces_minimum_appointment_duration()

@@ -17,25 +17,28 @@ class AvailabilityService
         User $artist,
         int $duration,
         Carbon $date,
-        int $limit = 5
+        int $limit = 5,
+        ?int $buffer = 0
     ): Collection {
         // Get the artist's work schedule for the next 7 days
         $workSchedules = $artist->workSchedules()
-            ->where('day_of_week', '>=', $date->dayOfWeek)
-            ->orWhere('day_of_week', '<', $date->copy()->addDays(7)->dayOfWeek)
+            ->where(function ($query) use ($date) {
+                $query->where('day_of_week', '>=', $date->dayOfWeek)
+                    ->orWhere('day_of_week', '<', $date->copy()->addDays(7)->dayOfWeek);
+            })
             ->get()
             ->keyBy('day_of_week');
 
         // Get existing appointments for the next 7 days
         $existingAppointments = $artist->appointments()
-            ->where('starts_at', '>=', $date->startOfDay())
+            ->where('starts_at', '>=', $date->copy()->startOfDay())
             ->where('starts_at', '<=', $date->copy()->addDays(7)->endOfDay())
             ->orderBy('starts_at')
             ->get();
 
         $availableSlots = collect();
-        $currentDate = $date->copy();
-        $endDate = $date->copy()->addDays(7);
+        $currentDate = $date->copy()->startOfDay();
+        $endDate = $date->copy()->addDays(7)->endOfDay();
 
         while ($currentDate->lte($endDate) && $availableSlots->count() < $limit) {
             $daySchedule = $workSchedules->get($currentDate->dayOfWeek);
@@ -54,7 +57,8 @@ class AvailabilityService
                 appointments: $existingAppointments->filter(
                     fn ($apt) => Carbon::parse($apt->starts_at)->isSameDay($currentDate)
                 ),
-                duration: $duration
+                duration: $duration,
+                buffer: $buffer
             );
 
             $availableSlots = $availableSlots->concat($daySlots);
@@ -84,7 +88,8 @@ class AvailabilityService
         Carbon $workStart,
         Carbon $workEnd,
         Collection $appointments,
-        int $duration
+        int $duration,
+        int $buffer = 0
     ): Collection {
         // Set the work hours for this specific date
         $dayStart = $date->copy()->setTimeFrom($workStart);
@@ -102,20 +107,50 @@ class AvailabilityService
             $dayEnd->subMinutes($duration)
         ));
 
-        return $intervals->filter(function ($startTime) use ($appointments, $duration) {
-            $endTime = $startTime->copy()->addMinutes($duration);
+        return $intervals->filter(function ($startTime) use ($appointments, $duration, $buffer) {
+            $proposedStart = $startTime->copy();
+            $proposedEnd = $startTime->copy()->addMinutes($duration);
+
+            // Add buffer before and after if specified
+            if ($buffer > 0) {
+                $proposedStart = $proposedStart->subMinutes($buffer);
+                $proposedEnd = $proposedEnd->addMinutes($buffer);
+            }
 
             // Check if this slot overlaps with any existing appointments
-            $hasConflict = $appointments->some(function ($appointment) use ($startTime, $endTime) {
+            foreach ($appointments as $appointment) {
                 $appointmentStart = Carbon::parse($appointment->starts_at);
                 $appointmentEnd = Carbon::parse($appointment->ends_at);
 
-                return $startTime->between($appointmentStart, $appointmentEnd) ||
-                    $endTime->between($appointmentStart, $appointmentEnd) ||
-                    ($startTime->lte($appointmentStart) && $endTime->gte($appointmentEnd));
-            });
+                if ($this->timeslotsOverlap(
+                    $proposedStart,
+                    $proposedEnd,
+                    $appointmentStart,
+                    $appointmentEnd
+                )) {
+                    return false;
+                }
+            }
 
-            return !$hasConflict;
+            return true;
         });
+    }
+
+    /**
+     * Check if two timeslots overlap
+     */
+    private function timeslotsOverlap(
+        Carbon $start1,
+        Carbon $end1,
+        Carbon $start2,
+        Carbon $end2
+    ): bool {
+        // Two time slots overlap if one starts during the other
+        // or if one completely contains the other
+        return ($start1->between($start2, $end2) ||
+            $end1->between($start2, $end2) ||
+            $start2->between($start1, $end1) ||
+            $end2->between($start1, $end1)) ||
+            ($start1->equalTo($start2) || $end1->equalTo($end2));
     }
 } 
