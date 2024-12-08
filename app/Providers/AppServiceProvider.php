@@ -37,6 +37,12 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(GoogleCalendarService::class)
             );
         });
+
+        // Bind AppointmentRepositoryInterface to DatabaseAppointmentRepository
+        $this->app->bind(
+            \App\Repositories\AppointmentRepositoryInterface::class,
+            \App\Repositories\DatabaseAppointmentRepository::class
+        );
     }
 
     /**
