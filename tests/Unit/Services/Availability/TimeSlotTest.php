@@ -5,10 +5,11 @@ namespace Tests\Unit\Services\Availability;
 use App\Services\Availability\TimeSlot;
 use Carbon\Carbon;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class TimeSlotTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_detects_overlapping_slots()
     {
         // Arrange
@@ -28,7 +29,7 @@ class TimeSlotTest extends TestCase
         $this->assertTrue($slot1->overlaps($slot2));
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_non_overlapping_slots()
     {
         // Arrange
@@ -48,7 +49,7 @@ class TimeSlotTest extends TestCase
         $this->assertFalse($slot1->overlaps($slot2));
     }
 
-    /** @test */
+    #[Test]
     public function it_converts_to_array_format()
     {
         // Arrange
@@ -67,7 +68,7 @@ class TimeSlotTest extends TestCase
         ], $array);
     }
 
-    /** @test */
+    #[Test]
     public function it_provides_access_to_properties()
     {
         // Arrange

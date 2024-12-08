@@ -4,167 +4,110 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\WorkSchedule;
-use App\Services\Availability\TimeSlot;
-use App\Services\Availability\SlotConfiguration;
-use App\Services\Availability\AppointmentCache;
-use App\Repositories\AppointmentRepository;
-use App\Services\Availability\TimePreferenceStrategy;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
+use App\Repositories\AppointmentRepositoryInterface;
 
 class AvailabilityService
 {
     public function __construct(
-        private readonly AppointmentCache $cache,
-        private readonly AppointmentRepository $appointments,
-        private readonly ?TimePreferenceStrategy $timePreference = null
+        private readonly AppointmentRepositoryInterface $appointmentRepository
     ) {}
 
-    /**
-     * Find available appointment slots for an artist
-     */
     public function findAvailableSlots(
         User $artist,
         int $duration,
         Carbon $date,
         ?int $limit = null,
-        ?int $buffer = 0
+        bool $lookAhead = false
     ): Collection {
-        $config = new SlotConfiguration($duration, $buffer, $limit);
-        $workSchedules = $this->getArtistWorkSchedules($artist);
-        
-        if (!$workSchedules->has($date->dayOfWeek)) {
-            return collect();
-        }
-
-        $availableSlots = $this->generateAvailableSlots(
-            $artist,
-            $workSchedules,
-            $date,
-            $config
-        );
-
-        return $this->applyPreferences($availableSlots);
-    }
-
-    /**
-     * Get artist's work schedules
-     */
-    private function getArtistWorkSchedules(User $artist): Collection
-    {
-        return WorkSchedule::getCachedSchedule($artist->id)
-            ->keyBy('day_of_week');
-    }
-
-    /**
-     * Generate available slots based on work schedule and appointments
-     */
-    private function generateAvailableSlots(
-        User $artist,
-        Collection $workSchedules,
-        Carbon $date,
-        SlotConfiguration $config
-    ): Collection {
-        $daySchedule = $workSchedules->get($date->dayOfWeek);
-        if (!$daySchedule) {
-            return collect();
-        }
-
-        return $this->generateDaySlots(
-            $artist,
-            $date,
-            $daySchedule,
-            $config
-        );
-    }
-
-    /**
-     * Generate slots for a specific day
-     */
-    private function generateDaySlots(
-        User $artist,
-        Carbon $date,
-        WorkSchedule $schedule,
-        SlotConfiguration $config
-    ): Collection {
-        $dayStart = $this->calculateDayStart($date, $schedule->start_time);
-        $dayEnd = $date->copy()->setTimeFrom(Carbon::parse($schedule->end_time));
-        
-        // Adjust end time to account for appointment duration
-        $dayEnd = $dayEnd->subMinutes($config->duration);
-        
-        // Calculate available intervals
-        $intervals = collect();
-        $current = $dayStart->copy();
-        
-        while ($current->lte($dayEnd)) {
-            $intervals->push($current->copy());
-            $current->addMinutes($config->interval);
-        }
-        
-        $appointments = $this->cache->getArtistAppointments($artist->id, $date);
-        
-        $slots = $this->filterAvailableSlots($intervals, $appointments, $config);
-        
-        return $slots->take($config->limit ?? PHP_INT_MAX);
-    }
-
-    /**
-     * Calculate the start time for a day
-     */
-    private function calculateDayStart(Carbon $date, string $scheduleStart): Carbon
-    {
-        $start = $date->copy()->setTimeFrom(Carbon::parse($scheduleStart));
-        
-        if ($date->isToday() && now()->gt($start)) {
-            return now()->ceil(30 * 60);
-        }
-        
-        return $start;
-    }
-
-    /**
-     * Filter available slots based on existing appointments
-     */
-    private function filterAvailableSlots(
-        Collection $intervals,
-        Collection $appointments,
-        SlotConfiguration $config
-    ): Collection {
-        $appointmentSlots = $appointments->map(function ($apt) use ($config) {
-            $start = Carbon::parse($apt->starts_at);
-            $end = Carbon::parse($apt->ends_at);
+        // Get work schedule for the artist
+        $schedule = WorkSchedule::where('user_id', $artist->id)
+            ->where('day_of_week', $date->dayOfWeek ?: 7)
+            ->where('is_active', true)
+            ->first();
             
-            if ($config->buffer > 0) {
-                $start = $start->copy()->subMinutes($config->buffer);
-                $end = $end->copy()->addMinutes($config->buffer);
+        // If no schedule for current day, look for next available day
+        if (!$schedule) {
+            // Look for next 7 days
+            for ($i = 1; $i <= 7; $i++) {
+                $nextDate = $date->copy()->addDays($i);
+                $nextSchedule = WorkSchedule::where('user_id', $artist->id)
+                    ->where('day_of_week', $nextDate->dayOfWeek ?: 7)
+                    ->where('is_active', true)
+                    ->first();
+                
+                if ($nextSchedule) {
+                    $date = $nextDate;
+                    $schedule = $nextSchedule;
+                    break;
+                }
             }
             
-            return new TimeSlot($start, $end, 0);
-        });
-
-        return $intervals
-            ->map(fn ($start) => new TimeSlot(
-                $start,
-                $start->copy()->addMinutes($config->duration),
-                $config->duration
-            ))
-            ->filter(fn (TimeSlot $slot) => 
-                !$appointmentSlots->contains(fn (TimeSlot $apt) => $slot->overlaps($apt))
-            )
-            ->map->toArray();
-    }
-
-    /**
-     * Apply time preferences to slots if strategy exists
-     */
-    private function applyPreferences(Collection $slots): Collection
-    {
-        if ($this->timePreference) {
-            return $this->timePreference->filterSlots($slots);
+            // If still no schedule found, return empty collection
+            if (!$schedule) {
+                return collect();
+            }
         }
-        
-        return $slots;
+
+        // Get existing appointments for the date
+        $existingAppointments = $this->appointmentRepository->getAppointmentsForDate($artist, $date);
+
+        // If looking ahead and date is today, start from now
+        $startTime = $date->copy();
+        if ($lookAhead && $date->isToday()) {
+            $startTime = now()->ceil(15);
+        }
+
+        // Initialize available slots collection
+        $availableSlots = collect();
+
+        // Parse working hours
+        $dayStart = $startTime->copy()->setTimeFromTimeString($schedule->start_time);
+        $dayEnd = $date->copy()->setTimeFromTimeString($schedule->end_time);
+
+        // If start time is after end time for today, return empty collection
+        if ($startTime->gt($dayEnd)) {
+            return collect();
+        }
+
+        // Use start time or day start, whichever is later
+        $currentTime = $startTime->gt($dayStart) ? $startTime : $dayStart;
+
+        // Iterate through the day in 30-minute increments
+        while ($currentTime->copy()->addMinutes($duration)->lte($dayEnd)) {
+            $slotEnd = $currentTime->copy()->addMinutes($duration);
+            
+            // Check if slot overlaps with any existing appointments
+            $hasOverlap = $existingAppointments->some(function ($appointment) use ($currentTime, $slotEnd) {
+                $appointmentStart = Carbon::parse($appointment->starts_at);
+                $appointmentEnd = Carbon::parse($appointment->ends_at);
+                
+                // A slot overlaps if it starts before an appointment ends 
+                // AND ends after an appointment starts
+                return $currentTime->lt($appointmentEnd) && 
+                       $slotEnd->gt($appointmentStart);
+            });
+
+            if (!$hasOverlap) {
+                $availableSlots->push([
+                    'starts_at' => $currentTime->toDateTimeString(),
+                    'ends_at' => $slotEnd->toDateTimeString(),
+                    'duration' => $duration
+                ]);
+
+                if ($limit && $availableSlots->count() >= $limit) {
+                    break;
+                }
+                
+                // Skip ahead by the duration when we find an available slot
+                $currentTime->addMinutes($duration);
+            } else {
+                // Only increment by 30 minutes if the current slot wasn't available
+                $currentTime->addMinutes(30);
+            }
+        }
+
+        return $availableSlots;
     }
 } 

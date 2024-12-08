@@ -4,10 +4,11 @@ namespace Tests\Unit\Services\Availability;
 
 use App\Services\Availability\SlotConfiguration;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class SlotConfigurationTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_creates_valid_configuration()
     {
         // Act
@@ -25,7 +26,7 @@ class SlotConfigurationTest extends TestCase
         $this->assertEquals(30, $config->interval);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_duration_range()
     {
         // Assert
@@ -36,7 +37,7 @@ class SlotConfigurationTest extends TestCase
         new SlotConfiguration(duration: 20);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_buffer_range()
     {
         // Assert
@@ -47,7 +48,7 @@ class SlotConfigurationTest extends TestCase
         new SlotConfiguration(duration: 60, buffer: 150);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_limit_range()
     {
         // Assert
@@ -58,7 +59,7 @@ class SlotConfigurationTest extends TestCase
         new SlotConfiguration(duration: 60, limit: 150);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_interval_range()
     {
         // Assert
@@ -69,7 +70,7 @@ class SlotConfigurationTest extends TestCase
         new SlotConfiguration(duration: 60, interval: 10);
     }
 
-    /** @test */
+    #[Test]
     public function it_allows_null_limit()
     {
         // Act

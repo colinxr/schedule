@@ -23,11 +23,13 @@ class AvailabilityController extends Controller
             ], 404);
         }
 
-        $date = $request->validated('date') ? now()->parse($request->validated('date')) : now();
+        $date = $request->validated('date') 
+            ? now()->parse($request->validated('date'))->startOfDay()
+            : now()->startOfDay();
+            
         $duration = $request->validated('duration');
         $page = $request->input('page', 1);
         $perPage = $request->input('per_page', 10);
-        $buffer = $request->input('buffer', 0);
         $limit = $request->input('limit');
 
         // Calculate available slots
@@ -36,8 +38,13 @@ class AvailabilityController extends Controller
             duration: $duration,
             date: $date,
             limit: $limit,
-            buffer: $buffer
+            lookAhead: !$request->has('date')
         );
+
+        // If limit is specified, take only that many slots
+        if ($limit) {
+            $slots = $slots->take($limit);
+        }
 
         // Convert collection to array and paginate
         $paginatedResults = TimeslotPaginator::paginate($slots->toArray(), $page, $perPage);
