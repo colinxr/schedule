@@ -19,12 +19,18 @@ class Appointment extends Model
         'ends_at',
         'google_event_id',
         'status',
-        'notes'
+        'notes',
+        'price',
+        'deposit_amount',
+        'deposit_paid_at'
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'deposit_paid_at' => 'datetime',
+        'price' => 'decimal:2',
+        'deposit_amount' => 'decimal:2',
     ];
 
     /**
@@ -69,5 +75,50 @@ class Appointment extends Model
     public function getEndsAtAttribute($value): string
     {
         return Carbon::parse($value)->toRfc3339String();
+    }
+
+    /**
+     * Calculate the default deposit amount based on the artist's settings
+     */
+    public function calculateDefaultDepositAmount(): ?float
+    {
+        if (!$this->price || !$this->artist || !$this->artist->profile) {
+            return null;
+        }
+
+        $percentage = $this->artist->profile->getSetting('deposit_percentage', 30);
+        return round($this->price * ($percentage / 100), 2);
+    }
+
+    /**
+     * Mark the deposit as paid
+     */
+    public function markDepositAsPaid(): void
+    {
+        $this->update(['deposit_paid_at' => now()]);
+    }
+
+    /**
+     * Check if the deposit has been paid
+     */
+    public function isDepositPaid(): bool
+    {
+        return !is_null($this->deposit_paid_at);
+    }
+
+    /**
+     * Get the remaining balance after deposit
+     */
+    public function getRemainingBalance(): ?float
+    {
+        if (!$this->price) {
+            return null;
+        }
+
+        if (!$this->deposit_amount || !$this->isDepositPaid()) {
+            return round($this->price, 2);
+        }
+
+        return round($this->price - $this->deposit_amount, 2);
     }
 } 
