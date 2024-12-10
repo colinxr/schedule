@@ -35,6 +35,9 @@ class Profile extends Model
         $settings = $this->settings ?? [];
 
         foreach ($newSettings as $key => $value) {
+            if ($key === 'deposit_percentage') {
+                $this->validateDepositPercentage($value);
+            }
             Arr::set($settings, $key, $value);
         }
 
@@ -47,6 +50,21 @@ class Profile extends Model
      */
     public function getSetting(string $key, $default = null)
     {
+        if ($key === 'deposit_percentage' && $default === null) {
+            $default = 30;
+        }
         return Arr::get($this->settings ?? [], $key, $default);
+    }
+
+    /**
+     * Validate the deposit percentage value
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validateDepositPercentage(int $value): void
+    {
+        if ($value < 0 || $value > 100) {
+            throw new \InvalidArgumentException('Deposit percentage must be between 0 and 100');
+        }
     }
 } 

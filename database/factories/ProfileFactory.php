@@ -14,32 +14,31 @@ class ProfileFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'instagram' => '@' . $this->faker->userName(),
-            'phone' => $this->faker->phoneNumber(),
+            'instagram' => fake()->userName(),
+            'phone' => fake()->phoneNumber(),
             'settings' => [
-                'notifications' => [
-                    'email' => true,
-                    'push' => true,
-                ],
+                'deposit_percentage' => 30,
             ],
         ];
     }
 
-    public function withCustomSettings(array $settings): self
+    /**
+     * Create a profile without settings
+     */
+    public function withoutSettings()
     {
-        return $this->state(function (array $attributes) use ($settings) {
-            return [
-                'settings' => $settings,
-            ];
-        });
+        return $this->state(fn (array $attributes) => [
+            'settings' => null,
+        ]);
     }
 
-    public function withoutSettings(): self
+    /**
+     * Create a profile with custom settings
+     */
+    public function withCustomSettings(array $settings)
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'settings' => null,
-            ];
-        });
+        return $this->state(fn (array $attributes) => [
+            'settings' => $settings,
+        ]);
     }
 } 

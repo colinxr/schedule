@@ -155,4 +155,44 @@ class ProfileTest extends TestCase
             }
         );
     }
+
+    public function test_default_deposit_percentage_is_thirty_percent(): void
+    {
+        $profile = Profile::factory()->create();
+        $this->assertEquals(30, $profile->getSetting('deposit_percentage', 30));
+    }
+
+    public function test_can_update_deposit_percentage(): void
+    {
+        $profile = Profile::factory()->create();
+        
+        $profile->updateSettings(['deposit_percentage' => 50]);
+        
+        $this->assertEquals(50, $profile->getSetting('deposit_percentage'));
+    }
+
+    public function test_deposit_percentage_can_be_zero(): void
+    {
+        $profile = Profile::factory()->create();
+        
+        $profile->updateSettings(['deposit_percentage' => 0]);
+        
+        $this->assertEquals(0, $profile->getSetting('deposit_percentage'));
+    }
+
+    public function test_deposit_percentage_cannot_exceed_hundred(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        
+        $profile = Profile::factory()->create();
+        $profile->updateSettings(['deposit_percentage' => 101]);
+    }
+
+    public function test_deposit_percentage_cannot_be_negative(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        
+        $profile = Profile::factory()->create();
+        $profile->updateSettings(['deposit_percentage' => -1]);
+    }
 } 
