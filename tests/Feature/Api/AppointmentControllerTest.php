@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Conversation;
+use App\Models\Profile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AppointmentControllerTest extends TestCase
@@ -138,5 +139,143 @@ class AppointmentControllerTest extends TestCase
         ]);
 
         $response->assertStatus(403);
+    }
+
+    public function test_artist_can_update_appointment_price(): void
+    {
+        $this->actingAs($this->artist);
+
+        // Create artist profile with default deposit percentage
+        $profile = Profile::factory()->create([
+            'user_id' => $this->artist->id,
+            'settings' => ['deposit_percentage' => 30]
+        ]);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create(['price' => null]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/price", [
+            'price' => 150.00
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'data' => [
+                    'price' => '150.00',
+                    'deposit_amount' => '45.00', // 30% default deposit
+                    'remaining_balance' => 105.00
+                ]
+            ]);
+
+        $this->assertDatabaseHas('appointments', [
+            'id' => $appointment->id,
+            'price' => 150.00,
+            'deposit_amount' => 45.00
+        ]);
+    }
+
+    public function test_artist_can_update_appointment_deposit(): void
+    {
+        $this->actingAs($this->artist);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create([
+                'price' => 200.00,
+                'deposit_amount' => 60.00
+            ]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit", [
+            'deposit_amount' => 80.00
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'data' => [
+                    'price' => '200.00',
+                    'deposit_amount' => '80.00',
+                    'remaining_balance' => 120.00
+                ]
+            ]);
+    }
+
+    public function test_deposit_cannot_exceed_price(): void
+    {
+        $this->actingAs($this->artist);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create([
+                'price' => 100.00,
+                'deposit_amount' => 30.00
+            ]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit", [
+            'deposit_amount' => 150.00
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['deposit_amount']);
+    }
+
+    public function test_cannot_set_deposit_without_price(): void
+    {
+        $this->actingAs($this->artist);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create(['price' => null]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit", [
+            'deposit_amount' => 50.00
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'message' => 'Cannot set deposit amount without a price.'
+            ]);
+    }
+
+    public function test_client_cannot_update_appointment_price(): void
+    {
+        $this->actingAs($this->client);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create();
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/price", [
+            'price' => 150.00
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_client_cannot_update_appointment_deposit(): void
+    {
+        $this->actingAs($this->client);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create();
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit", [
+            'deposit_amount' => 50.00
+        ]);
+
+        $response->assertForbidden();
     }
 } 

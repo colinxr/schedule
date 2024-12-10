@@ -13,6 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use App\Http\Resources\AppointmentResource;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Appointment\UpdateAppointmentPriceRequest;
+use App\Http\Requests\Appointment\UpdateAppointmentDepositRequest;
 
 class AppointmentController extends Controller
 {
@@ -73,5 +75,44 @@ class AppointmentController extends Controller
         $this->appointmentService->deleteAppointment($appointment);
 
         return response()->noContent();
+    }
+
+    public function updatePrice(UpdateAppointmentPriceRequest $request, Appointment $appointment): JsonResponse
+    {
+        $appointment->update(['price' => $request->price]);
+        $appointment->refresh();
+
+        // Calculate and set the default deposit
+        $defaultDeposit = $appointment->calculateDefaultDepositAmount();
+        $appointment->update(['deposit_amount' => $defaultDeposit]);
+        $appointment->refresh();
+
+        return response()->json([
+            'data' => [
+                'price' => number_format($appointment->price, 2),
+                'deposit_amount' => number_format($appointment->deposit_amount, 2),
+                'remaining_balance' => $appointment->getRemainingBalance()
+            ]
+        ]);
+    }
+
+    public function updateDeposit(UpdateAppointmentDepositRequest $request, Appointment $appointment): JsonResponse
+    {
+        if (is_null($appointment->price)) {
+            return response()->json([
+                'message' => 'Cannot set deposit amount without a price.'
+            ], 422);
+        }
+
+        $appointment->update(['deposit_amount' => $request->deposit_amount]);
+        $appointment->refresh();
+
+        return response()->json([
+            'data' => [
+                'price' => number_format($appointment->price, 2),
+                'deposit_amount' => number_format($appointment->deposit_amount, 2),
+                'remaining_balance' => $appointment->getRemainingBalance()
+            ]
+        ]);
     }
 } 

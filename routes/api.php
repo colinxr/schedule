@@ -36,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('appointments', [AppointmentController::class, 'store']);
     Route::put('appointments/{appointment}', [AppointmentController::class, 'update']);
     Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy']);
+    Route::patch('appointments/{appointment}/price', [AppointmentController::class, 'updatePrice']);
+    Route::patch('appointments/{appointment}/deposit', [AppointmentController::class, 'updateDeposit']);
 
     // Google Calendar routes
     Route::prefix('google')->group(function () {
