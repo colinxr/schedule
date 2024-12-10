@@ -138,17 +138,19 @@ class AppointmentTest extends TestCase
     {
         $appointment = Appointment::factory()->create([
             'price' => 100.00,
-            'deposit_amount' => 30.00
+            'deposit_amount' => 30.00,
+            'deposit_paid_at' => now()
         ]);
 
         $this->assertEquals(70.00, $appointment->getRemainingBalance());
     }
 
-    public function test_remaining_balance_equals_price_when_no_deposit(): void
+    public function test_remaining_balance_equals_price_when_deposit_not_paid(): void
     {
         $appointment = Appointment::factory()->create([
             'price' => 100.00,
-            'deposit_amount' => null
+            'deposit_amount' => 30.00,
+            'deposit_paid_at' => null
         ]);
 
         $this->assertEquals(100.00, $appointment->getRemainingBalance());
