@@ -4,7 +4,6 @@ namespace App\Listeners;
 
 use App\Events\AppointmentCreated;
 use App\Events\AppointmentUpdated;
-use App\Events\AppointmentDeleted;
 use App\Services\GoogleCalendarService;
 use App\Exceptions\Appointment\GoogleCalendarSyncException;
 

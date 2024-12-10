@@ -10,14 +10,14 @@ use Mockery\MockInterface;
 use App\Models\WorkSchedule;
 use App\Models\Appointment;
 use App\Services\AvailabilityService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Repositories\AppointmentRepositoryInterface;
 use PHPUnit\Framework\Attributes\Test;
 
 
 class AvailabilityServiceTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     private AvailabilityService $service;
     /** @var AppointmentRepositoryInterface&\Mockery\MockInterface */

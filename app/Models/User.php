@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements AuthenticatableContract
 {
@@ -76,5 +77,34 @@ class User extends Authenticatable implements AuthenticatableContract
     public function workSchedules()
     {
         return $this->hasMany(WorkSchedule::class);
+    }
+
+    public function clients(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'artist_client', 'artist_id', 'client_id')
+            ->withTimestamps();
+    }
+
+    public function artists(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'artist_client', 'client_id', 'artist_id')
+            ->withTimestamps();
+    }
+
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class, 'client_id');
+    }
+
+    public function artistConversations()
+    {
+        return $this->hasMany(Conversation::class, 'artist_id');
+    }
+
+    public function hasAccessToClient(User $client): bool
+    {
+        return $this->clients()
+            ->where('client_id', $client->id)
+            ->exists();
     }
 }
