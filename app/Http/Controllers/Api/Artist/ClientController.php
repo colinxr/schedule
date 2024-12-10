@@ -6,8 +6,7 @@ use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Resources\ConversationResource;
-use App\Http\Resources\AppointmentResource;
+use App\Http\Resources\ClientResource;
 
 class ClientController extends Controller
 {
@@ -32,26 +31,17 @@ class ClientController extends Controller
                 $query->select('id', 'client_id', 'artist_id', 'status', 'created_at', 'last_message_at')
                     ->where('artist_id', Auth::id())
                     ->latest('last_message_at')
-                    ->with(['details:id,conversation_id,phone,email,instagram'])
-                    ->paginate(10);
+                    ->with(['details:id,conversation_id,phone,email,instagram']);
             },
             'clientAppointments' => function ($query) {
                 $query->select('id', 'client_id', 'artist_id', 'starts_at', 'ends_at', 'status', 'price', 'deposit_amount', 'deposit_paid_at')
                     ->where('artist_id', Auth::id())
-                    ->latest('starts_at')
-                    ->paginate(10);
+                    ->latest('starts_at');
             }
         ]);
 
         return response()->json([
-            'data' => [
-                'id' => $client->id,
-                'name' => $client->name,
-                'email' => $client->email,
-                'phone' => $client->phone,
-                'conversations' => ConversationResource::collection($client->conversations),
-                'appointments' => AppointmentResource::collection($client->clientAppointments),
-            ]
+            'data' => new ClientResource($client)
         ]);
     }
 } 

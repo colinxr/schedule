@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkSchedule\StoreWorkScheduleRequest;
 use App\Http\Requests\WorkSchedule\UpdateWorkScheduleRequest;
+use App\Http\Resources\WorkScheduleResource;
 use App\Models\WorkSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class WorkScheduleController extends Controller
         $schedules = Auth::user()->workSchedules()->get();
         
         return response()->json([
-            'schedules' => $schedules
+            'schedules' => WorkScheduleResource::collection($schedules)
         ]);
     }
 
@@ -30,7 +31,7 @@ class WorkScheduleController extends Controller
         });
 
         return response()->json([
-            'schedules' => $schedules
+            'schedules' => WorkScheduleResource::collection($schedules)
         ], 201);
     }
 
@@ -39,7 +40,7 @@ class WorkScheduleController extends Controller
         $workSchedule->update($request->validated());
 
         return response()->json([
-            'schedule' => $workSchedule
+            'data' => new WorkScheduleResource($workSchedule)
         ]);
     }
 

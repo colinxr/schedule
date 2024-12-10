@@ -85,7 +85,8 @@ class AvailabilityServiceTest extends TestCase
         $slots = $this->service->findAvailableSlots(
             artist: $artist,
             duration: 60,
-            date: $date
+            date: $date,
+            lookAhead: true
         );
 
         // Assert
