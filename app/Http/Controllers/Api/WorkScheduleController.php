@@ -20,7 +20,7 @@ class WorkScheduleController extends Controller
         $schedules = Auth::user()->workSchedules()->get();
         
         return response()->json([
-            'data' => WorkScheduleResource::collection($schedules)
+            'schedules' => WorkScheduleResource::collection($schedules)
         ]);
     }
 
@@ -31,7 +31,7 @@ class WorkScheduleController extends Controller
         });
 
         return response()->json([
-            'data' => WorkScheduleResource::collection($schedules)
+            'schedules' => WorkScheduleResource::collection($schedules)
         ], 201);
     }
 

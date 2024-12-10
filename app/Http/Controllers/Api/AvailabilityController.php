@@ -25,12 +25,14 @@ class AvailabilityController extends Controller
         }
 
         $paginatedResults = $this->availabilityService->getAvailableSlots(
+            $artist,
             $request->date,
             $request->duration,
             $request->page ?? 1,
-            $request->per_page ?? 10
+            $request->per_page ?? 10,
+            $request->limit
         );
 
-        return new AvailabilityResource($paginatedResults);
+        return response()->json(new AvailabilityResource($paginatedResults));
     }
 } 
