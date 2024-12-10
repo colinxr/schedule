@@ -17,10 +17,10 @@ class ConversationResource extends JsonResource
                 'id' => $this->client->id,
                 'name' => $this->client->name,
                 'details' => [
-                    'phone' => $this->details->phone,
-                    'email' => $this->details->email,
-                    'instagram' => $this->details->instagram,
-                ]
+                    'phone' => $this->client->details->phone ?? null,
+                    'email' => $this->client->details->email ?? null,
+                    'instagram' => $this->client->details->instagram ?? null,
+                ],
             ],
             'messages' => [
                 'data' => $this->whenLoaded('messages', function() {

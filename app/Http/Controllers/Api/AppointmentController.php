@@ -28,13 +28,16 @@ class AppointmentController extends Controller
     {
         $appointments = $this->appointmentService->getUserAppointments(Auth::user());
         return response()->json([
-            'data' => AppointmentResource::collection($appointments->load(['artist', 'client']))
+            'data' => AppointmentResource::collection($appointments)
         ]);
     }
 
     public function show(Appointment $appointment): JsonResponse
     {
         $this->authorize('view', $appointment);
+        
+        $appointment->load(['artist', 'client', 'conversation']);
+        
         return response()->json([
             'data' => new AppointmentResource($appointment)
         ]);

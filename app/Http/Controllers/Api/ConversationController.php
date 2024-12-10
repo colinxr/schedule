@@ -25,7 +25,12 @@ class ConversationController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $conversations = $this->conversationService->getArtistConversations(Auth::id());
+        $conversations = Cache::remember(
+            "user.".Auth::id().".conversations",
+            now()->addMinutes(5),
+            fn() => $this->conversationService->getArtistConversations(Auth::id())
+        );
+
         return ConversationResource::collection($conversations);
     }
 
@@ -36,16 +41,24 @@ class ConversationController extends Controller
         $messages = Cache::remember(
             "conversation.{$conversation->id}.messages.page." . request('page', 1),
             now()->addMinute(),
-            fn() => $conversation->messages()->paginate(50)
+            fn() => $conversation->messages()
+                ->select('id', 'conversation_id', 'content', 'created_at', 'read_at', 'sender_type', 'sender_id')
+                ->with(['sender:id,first_name,last_name'])
+                ->latest()
+                ->paginate(50)
         );
 
         $clientDetails = Cache::remember(
             "conversation.{$conversation->id}.client_details",
             now()->addHour(),
-            fn() => $conversation->client->load('details')
+            fn() => $conversation->client()
+                ->select('id', 'first_name', 'last_name', 'email')
+                ->with(['details:id,user_id,phone,instagram'])
+                ->first()
         );
 
         $conversation->setRelation('messages', $messages);
+        $conversation->setRelation('client', $clientDetails);
         
         return new ConversationResource($conversation);
     }
@@ -57,14 +70,15 @@ class ConversationController extends Controller
                 $request->validated()
             );
 
+            Cache::forget("user.".Auth::id().".conversations");
+
             return response()->json([
                 'message' => 'Conversation started successfully',
                 'data' => new ConversationResource($conversation)
             ], Response::HTTP_CREATED);
-
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to start conversation',
+                'message' => 'Failed to create conversation',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
