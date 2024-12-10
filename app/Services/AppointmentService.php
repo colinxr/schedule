@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Conversation;
-use App\Models\User;
 use App\Events\AppointmentCreated;
 use App\Events\AppointmentUpdated;
 use App\Events\AppointmentDeleted;
@@ -16,9 +16,39 @@ class AppointmentService
 {
     public function getUserAppointments(User $user): Collection
     {
-        return $user->role === 'artist'
-            ? $user->appointments()->with('client')->latest()->get()
-            : $user->clientAppointments()->with('artist')->latest()->get();
+        $query = $user->role === 'artist'
+            ? $user->appointments()
+            : $user->clientAppointments();
+
+        return $query->with([
+            'artist:id,first_name,last_name,email',
+            'client:id,first_name,last_name,email',
+            'conversation:id,artist_id,client_id,status'
+        ])
+        ->select([
+            'id',
+            'artist_id',
+            'client_id',
+            'conversation_id',
+            'starts_at',
+            'ends_at',
+            'status',
+            'price',
+            'deposit_amount',
+            'deposit_paid_at'
+        ])
+        ->latest('starts_at')
+        ->get();
+    }
+
+    public function getAppointmentWithDetails(Appointment $appointment): Appointment
+    {
+        return $appointment->load([
+            'artist:id,first_name,last_name,email',
+            'client:id,first_name,last_name,email',
+            'conversation:id,artist_id,client_id,status',
+            'conversation.details:id,conversation_id,phone,email,instagram'
+        ]);
     }
 
     public function createAppointment(array $data, User $artist, Conversation $conversation): Appointment
@@ -56,7 +86,10 @@ class AppointmentService
 
             AppointmentUpdated::dispatch($appointment, $changedAttributes);
 
-            return $appointment;
+            return $appointment->fresh([
+                'artist:id,first_name,last_name,email',
+                'client:id,first_name,last_name,email'
+            ]);
         });
     }
 
@@ -67,10 +100,5 @@ class AppointmentService
 
             AppointmentDeleted::dispatch($appointment);
         });
-    }
-
-    public function getAppointmentWithDetails(Appointment $appointment): Appointment
-    {
-        return $appointment->load(['artist', 'client', 'conversation.details']);
     }
 }
