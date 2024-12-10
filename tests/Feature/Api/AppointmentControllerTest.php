@@ -166,7 +166,7 @@ class AppointmentControllerTest extends TestCase
                 'data' => [
                     'price' => '150.00',
                     'deposit_amount' => '45.00', // 30% default deposit
-                    'remaining_balance' => 105.00
+                    'remaining_balance' => 150.00 // Full price until deposit is marked as paid
                 ]
             ]);
 
@@ -199,7 +199,7 @@ class AppointmentControllerTest extends TestCase
                 'data' => [
                     'price' => '200.00',
                     'deposit_amount' => '80.00',
-                    'remaining_balance' => 120.00
+                    'remaining_balance' => 200.00 // Full price until deposit is marked as paid
                 ]
             ]);
     }
@@ -275,6 +275,103 @@ class AppointmentControllerTest extends TestCase
         $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit", [
             'deposit_amount' => 50.00
         ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_artist_can_mark_deposit_as_paid(): void
+    {
+        $this->actingAs($this->artist);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create([
+                'price' => 200.00,
+                'deposit_amount' => 60.00,
+                'deposit_paid_at' => null
+            ]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit/toggle-paid");
+
+        $response->assertOk()
+            ->assertJson([
+                'data' => [
+                    'is_deposit_paid' => true,
+                    'deposit_amount' => '60.00',
+                    'remaining_balance' => 140.00
+                ]
+            ]);
+
+        $this->assertNotNull($appointment->fresh()->deposit_paid_at);
+    }
+
+    public function test_artist_can_mark_deposit_as_unpaid(): void
+    {
+        $this->actingAs($this->artist);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create([
+                'price' => 200.00,
+                'deposit_amount' => 60.00,
+                'deposit_paid_at' => now()
+            ]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit/toggle-paid");
+
+        $response->assertOk()
+            ->assertJson([
+                'data' => [
+                    'is_deposit_paid' => false,
+                    'deposit_paid_at' => null,
+                    'deposit_amount' => '60.00',
+                    'remaining_balance' => 200.00
+                ]
+            ]);
+
+        $this->assertNull($appointment->fresh()->deposit_paid_at);
+    }
+
+    public function test_cannot_mark_deposit_paid_without_deposit_amount(): void
+    {
+        $this->actingAs($this->artist);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create([
+                'price' => 200.00,
+                'deposit_amount' => null,
+                'deposit_paid_at' => null
+            ]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit/toggle-paid");
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'message' => 'Cannot mark deposit as paid when no deposit amount is set.'
+            ]);
+    }
+
+    public function test_client_cannot_mark_deposit_as_paid(): void
+    {
+        $this->actingAs($this->client);
+
+        $appointment = Appointment::factory()
+            ->for($this->conversation)
+            ->for($this->artist, 'artist')
+            ->for($this->client, 'client')
+            ->create([
+                'price' => 200.00,
+                'deposit_amount' => 60.00
+            ]);
+
+        $response = $this->patchJson("/api/appointments/{$appointment->id}/deposit/toggle-paid");
 
         $response->assertForbidden();
     }

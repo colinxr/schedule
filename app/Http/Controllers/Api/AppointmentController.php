@@ -115,4 +115,30 @@ class AppointmentController extends Controller
             ]
         ]);
     }
+
+    public function toggleDepositPaid(Appointment $appointment): JsonResponse
+    {
+        $this->authorize('update', $appointment);
+
+        if (is_null($appointment->deposit_amount)) {
+            return response()->json([
+                'message' => 'Cannot mark deposit as paid when no deposit amount is set.'
+            ], 422);
+        }
+
+        if ($appointment->isDepositPaid()) {
+            $appointment->update(['deposit_paid_at' => null]);
+        } else {
+            $appointment->markDepositAsPaid();
+        }
+
+        return response()->json([
+            'data' => [
+                'deposit_paid_at' => $appointment->deposit_paid_at?->toIso8601String(),
+                'is_deposit_paid' => $appointment->isDepositPaid(),
+                'deposit_amount' => number_format($appointment->deposit_amount, 2),
+                'remaining_balance' => $appointment->getRemainingBalance()
+            ]
+        ]);
+    }
 } 

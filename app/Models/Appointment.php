@@ -111,8 +111,12 @@ class Appointment extends Model
      */
     public function getRemainingBalance(): ?float
     {
-        if (!$this->price || !$this->deposit_amount) {
-            return $this->price;
+        if (!$this->price) {
+            return null;
+        }
+
+        if (!$this->deposit_amount || !$this->isDepositPaid()) {
+            return round($this->price, 2);
         }
 
         return round($this->price - $this->deposit_amount, 2);
