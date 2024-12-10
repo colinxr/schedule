@@ -31,7 +31,7 @@ class ConversationController extends Controller
 
     public function show(Conversation $conversation)
     {
-        abort_unless(auth()->id() === $conversation->artist_id, 403);
+        abort_unless(Auth::id() === $conversation->artist_id, 403);
 
         $messages = Cache::remember(
             "conversation.{$conversation->id}.messages.page." . request('page', 1),

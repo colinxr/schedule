@@ -1,12 +1,14 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\GoogleCalendarController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\WorkScheduleController;
 use App\Http\Controllers\Api\AvailabilityController;
+use App\Http\Controllers\Api\Artist\ClientController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -53,4 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/artists/{artist}/available-slots', [AvailabilityController::class, 'getAvailableSlots'])
         ->name('artists.available-slots')
         ->middleware(['throttle:30,1', 'cache.headers:public;max_age=3600;etag']);
+
+    Route::get('/client/{client}', [ClientController::class, 'show'])
+        ->name('api.artist.clients.show');
 });
