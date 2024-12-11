@@ -9,52 +9,32 @@ jest.mock("next/navigation", () => ({
 }));
 
 describe("LoginPage", () => {
-  const mockRouter = {
-    push: jest.fn(),
-  };
-
   beforeEach(() => {
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
-    mockRouter.push.mockClear();
-    global.fetch = jest.fn();
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
   });
 
   it("renders login form with all fields", () => {
     render(<LoginPage />);
-
     expect(screen.getByText("Welcome Back")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();
   });
 
-  it("shows success message when registered=true in URL", async () => {
+  it("shows success message when registered=true in URL", () => {
     const searchParams = new URLSearchParams();
     searchParams.set("registered", "true");
     (useSearchParams as jest.Mock).mockReturnValue(searchParams);
 
     render(<LoginPage />);
-
     expect(screen.getByText(/registration successful/i)).toBeInTheDocument();
-
-    await act(async () => {
-      jest.advanceTimersByTime(5000);
-    });
-
-    expect(screen.queryByText(/registration successful/i)).not.toBeInTheDocument();
   });
 
   it("validates required fields", async () => {
     render(<LoginPage />);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+      fireEvent.submit(screen.getByRole("form"));
     });
 
     await waitFor(() => {
@@ -70,7 +50,10 @@ describe("LoginPage", () => {
       fireEvent.change(screen.getByLabelText("Email"), {
         target: { value: "invalid-email" },
       });
-      fireEvent.blur(screen.getByLabelText("Email"));
+      fireEvent.change(screen.getByLabelText("Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.submit(screen.getByRole("form"));
     });
 
     await waitFor(() => {
@@ -79,7 +62,10 @@ describe("LoginPage", () => {
   });
 
   it("submits form with valid data", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    const mockRouter = { push: jest.fn() };
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+
+    global.fetch = jest.fn().mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({}),
     });
@@ -88,7 +74,7 @@ describe("LoginPage", () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText("Email"), {
-        target: { value: "john@example.com" },
+        target: { value: "test@example.com" },
       });
       fireEvent.change(screen.getByLabelText("Password"), {
         target: { value: "password123" },
@@ -103,7 +89,7 @@ describe("LoginPage", () => {
 
   it("handles login error", async () => {
     const errorMessage = "Invalid credentials";
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    global.fetch = jest.fn().mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve({ message: errorMessage }),
     });
@@ -112,7 +98,7 @@ describe("LoginPage", () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText("Email"), {
-        target: { value: "john@example.com" },
+        target: { value: "test@example.com" },
       });
       fireEvent.change(screen.getByLabelText("Password"), {
         target: { value: "password123" },

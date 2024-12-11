@@ -22,7 +22,11 @@ describe("RegisterPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Required")).toHaveLength(5);
+      expect(screen.getByText("First name is required")).toBeInTheDocument();
+      expect(screen.getByText("Last name is required")).toBeInTheDocument();
+      expect(screen.getByText("Email is required")).toBeInTheDocument();
+      expect(screen.getByText("Password is required")).toBeInTheDocument();
+      expect(screen.getByText("Please confirm your password")).toBeInTheDocument();
     });
   });
 

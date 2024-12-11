@@ -37,7 +37,13 @@ export function AuthForm<T extends z.ZodSchema>({
   const form = useForm<z.infer<T>>({
     resolver: zodResolver(schema),
     mode: "onBlur",
-    defaultValues: {} as z.infer<T>,
+    defaultValues: {
+      email: "",
+      password: "",
+      password_confirmation: "",
+      first_name: "",
+      last_name: "",
+    } as z.infer<T>,
   });
 
   const handleSubmit = async (data: z.infer<T>) => {
