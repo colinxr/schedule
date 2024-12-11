@@ -43,7 +43,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="w-full max-w-md space-y-4">
       <AuthForm
         title="Create an Account"
         description="Sign up for an artist account"
@@ -51,9 +51,9 @@ export default function RegisterPage() {
         onSubmit={handleRegister}
         submitText="Register"
         footer={
-          <p className="text-sm text-center">
+          <p className="text-gray-400">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href="/auth/login" className="text-sm hover:underline">
               Sign in
             </Link>
           </p>
@@ -66,9 +66,13 @@ export default function RegisterPage() {
               <FormItem>
                 <FormLabel>First Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="John" {...field} />
+                  <Input 
+                    placeholder="John" 
+                    className="form-input"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="form-error" />
               </FormItem>
             )}
           />
@@ -78,9 +82,13 @@ export default function RegisterPage() {
               <FormItem>
                 <FormLabel>Last Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Doe" {...field} />
+                  <Input 
+                    placeholder="Doe" 
+                    className="form-input"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="form-error" />
               </FormItem>
             )}
           />
@@ -91,9 +99,14 @@ export default function RegisterPage() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="john@example.com" {...field} />
+                <Input 
+                  type="email" 
+                  placeholder="john@example.com" 
+                  className="form-input"
+                  {...field} 
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="form-error" />
             </FormItem>
           )}
         />
@@ -103,9 +116,13 @@ export default function RegisterPage() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input 
+                  type="password" 
+                  className="form-input"
+                  {...field} 
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="form-error" />
             </FormItem>
           )}
         />
@@ -115,9 +132,13 @@ export default function RegisterPage() {
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input 
+                  type="password" 
+                  className="form-input"
+                  {...field} 
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="form-error" />
             </FormItem>
           )}
         />

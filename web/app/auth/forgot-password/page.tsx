@@ -41,25 +41,23 @@ export default function ForgotPasswordPage() {
 
   if (isEmailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Alert>
-            <AlertDescription className="text-center">
-              If an account exists with that email address, you will receive password reset instructions.
-            </AlertDescription>
-          </Alert>
-          <div className="mt-4 text-center">
-            <Link href="/auth/login" className="text-primary hover:underline">
-              Return to login
-            </Link>
-          </div>
+      <div className="w-full max-w-md">
+        <Alert className="bg-green-900/50 border-green-500/50 text-green-200">
+          <AlertDescription className="text-center">
+            If an account exists with that email address, you will receive password reset instructions.
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4 text-center">
+          <Link href="/auth/login" className="text-sm hover:underline">
+            Return to login
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="w-full max-w-md space-y-4">
       <AuthForm
         title="Forgot Password"
         description="Enter your email address and we'll send you instructions to reset your password."
@@ -67,9 +65,9 @@ export default function ForgotPasswordPage() {
         onSubmit={handleForgotPassword}
         submitText="Send Reset Link"
         footer={
-          <p className="text-sm text-center">
+          <p className="text-gray-400">
             Remember your password?{" "}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href="/auth/login" className="text-sm hover:underline">
               Sign in
             </Link>
           </p>
@@ -81,9 +79,14 @@ export default function ForgotPasswordPage() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="john@example.com" {...field} />
+                <Input 
+                  type="email" 
+                  placeholder="john@example.com" 
+                  className="form-input"
+                  {...field} 
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="form-error" />
             </FormItem>
           )}
         />

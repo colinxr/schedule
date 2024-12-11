@@ -59,27 +59,37 @@ export function AuthForm<T extends z.ZodSchema>({
   };
 
   return (
-    <Card className={cn("w-full max-w-md mx-auto", className)}>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+    <Card className={cn("w-full max-w-md bg-white shadow-2xl", className)}>
+      <CardHeader className="space-y-2">
+        <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">{title}</CardTitle>
+        {description && <CardDescription className="text-gray-500">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" role="form">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" role="form">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="bg-red-50 border-red-300 text-red-900">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            {children}
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <div className="space-y-4">
+              {children}
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              disabled={isLoading}
+            >
               {isLoading ? "Loading..." : submitText}
             </Button>
           </form>
         </Form>
       </CardContent>
-      {footer && <CardFooter>{footer}</CardFooter>}
+      {footer && (
+        <CardFooter className="flex flex-col space-y-2 text-sm text-gray-500">
+          {footer}
+        </CardFooter>
+      )}
     </Card>
   );
 } 

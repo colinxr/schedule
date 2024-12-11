@@ -52,66 +52,73 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-4">
-        {showSuccessMessage && (
-          <Alert className="mb-4">
-            <AlertDescription>
-              Registration successful! Please log in with your credentials.
-            </AlertDescription>
-          </Alert>
-        )}
-        <AuthForm
-          title="Welcome Back"
-          description="Sign in to your artist account"
-          schema={loginSchema}
-          onSubmit={handleLogin}
-          submitText="Sign In"
-          footer={
-            <div className="space-y-2 text-center text-sm">
-              <p>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-primary hover:underline"
-                >
-                  Forgot your password?
-                </Link>
-              </p>
-              <p>
-                Don't have an account?{" "}
-                <Link href="/auth/register" className="text-primary hover:underline">
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          }
-        >
-          <FormField
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="john@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </AuthForm>
-      </div>
+    <div className="w-full max-w-md space-y-4">
+      {showSuccessMessage && (
+        <Alert className="bg-green-900/50 border-green-500/50 text-green-200">
+          <AlertDescription>
+            Registration successful! Please log in with your credentials.
+          </AlertDescription>
+        </Alert>
+      )}
+      <AuthForm
+        title="Welcome Back"
+        description="Sign in to your artist account"
+        schema={loginSchema}
+        onSubmit={handleLogin}
+        submitText="Sign In"
+        footer={
+          <div className="space-y-2 text-center">
+            <p>
+              <Link
+                href="/auth/forgot-password"
+                className="text-blue-600 hover:text-blue-700 text-sm hover:underline"
+              >
+                Forgot your password?
+              </Link>
+            </p>
+            <p className="text-gray-500">
+              Don't have an account?{" "}
+              <Link href="/auth/register" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </div>
+        }
+      >
+        <FormField
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input 
+                  type="email" 
+                  placeholder="john@example.com" 
+                  className="form-input"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage className="form-error" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input 
+                  type="password" 
+                  className="form-input"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage className="form-error" />
+            </FormItem>
+          )}
+        />
+      </AuthForm>
     </div>
   );
 } 
