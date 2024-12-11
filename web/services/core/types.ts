@@ -18,4 +18,11 @@ export interface ApiClientConfig {
   baseURL: string;
   timeout?: number;
   headers?: Record<string, string>;
+}
+
+export interface ApiHeaders extends Record<string, string> {
+  'Content-Type'?: string;
+  'Accept'?: string;
+  'Authorization'?: string;
+  'X-Requested-With'?: string;
 } 

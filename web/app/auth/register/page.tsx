@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AuthService } from "@/services/auth/AuthService";
 
 const registerSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -24,22 +25,22 @@ const registerSchema = z.object({
 
 export default function RegisterPage() {
   const router = useRouter();
+  const authService = AuthService.getInstance();
 
   const handleRegister = async (data: z.infer<typeof registerSchema>) => {
-    const response = await fetch("/api/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Registration failed");
+    try {
+      await authService.register({
+        ...data,
+        role: 'artist', // Set default role
+      });
+      
+      router.push("/auth/login?registered=true");
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
+      throw new Error("Registration failed");
     }
-
-    router.push("/auth/login?registered=true");
   };
 
   return (
@@ -51,9 +52,9 @@ export default function RegisterPage() {
         onSubmit={handleRegister}
         submitText="Register"
         footer={
-          <p className="text-gray-400">
+          <p className="text-gray-500">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-sm hover:underline">
+            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
               Sign in
             </Link>
           </p>

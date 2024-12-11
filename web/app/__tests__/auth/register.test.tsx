@@ -1,8 +1,40 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterPage from "@/app/auth/register/page";
+import { useRouter } from "next/navigation";
 import { act } from "react";
+import { AuthService } from "@/services/auth/AuthService";
+
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(),
+}));
+
+jest.mock("@/services/auth/AuthService", () => {
+  const mockInstance = {
+    register: jest.fn(),
+    setToken: jest.fn(),
+  };
+
+  return {
+    AuthService: {
+      getInstance: jest.fn(() => mockInstance),
+    },
+  };
+});
 
 describe("RegisterPage", () => {
+  const mockRouter = { push: jest.fn() };
+  let mockAuthService: ReturnType<typeof AuthService.getInstance>;
+
+  beforeEach(() => {
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    mockRouter.push.mockClear();
+
+    mockAuthService = AuthService.getInstance();
+    (mockAuthService.register as jest.Mock).mockResolvedValue({ 
+      data: { token: 'fake-token', user: {} } 
+    });
+  });
+
   it("renders registration form", () => {
     render(<RegisterPage />);
     expect(screen.getByText("Create an Account")).toBeInTheDocument();
@@ -59,7 +91,7 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await act(async () => {
-      // Fill in all required fields to avoid other validation errors
+      // Fill in all required fields
       fireEvent.change(screen.getByLabelText("First Name"), { target: { value: "John" } });
       fireEvent.change(screen.getByLabelText("Last Name"), { target: { value: "Doe" } });
       fireEvent.change(screen.getByLabelText("Email"), { target: { value: "john@example.com" } });
@@ -69,20 +101,40 @@ describe("RegisterPage", () => {
     });
 
     await waitFor(() => {
-      const errorMessage = screen.getByText("Passwords do not match");
-      expect(errorMessage).toBeInTheDocument();
+      expect(screen.getByText("Passwords do not match")).toBeInTheDocument();
     });
   });
 
-  it("handles successful registration", async () => {
-    const mockRouter = { push: jest.fn() };
-    jest.mock("next/navigation", () => ({
-      useRouter: () => mockRouter,
-    }));
+  it("submits form with valid data", async () => {
+    render(<RegisterPage />);
 
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: true,
+    const validData = {
+      first_name: "John",
+      last_name: "Doe",
+      email: "john@example.com",
+      password: "StrongPass123",
+      password_confirmation: "StrongPass123",
+      role: "artist",
+    };
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("First Name"), { target: { value: validData.first_name } });
+      fireEvent.change(screen.getByLabelText("Last Name"), { target: { value: validData.last_name } });
+      fireEvent.change(screen.getByLabelText("Email"), { target: { value: validData.email } });
+      fireEvent.change(screen.getByLabelText("Password"), { target: { value: validData.password } });
+      fireEvent.change(screen.getByLabelText("Confirm Password"), { target: { value: validData.password_confirmation } });
+      fireEvent.submit(screen.getByRole("form"));
     });
+
+    await waitFor(() => {
+      expect(mockAuthService.register).toHaveBeenCalledWith(validData);
+      expect(mockRouter.push).toHaveBeenCalledWith("/auth/login?registered=true");
+    });
+  });
+
+  it("handles registration error", async () => {
+    const errorMessage = "Email already taken";
+    (mockAuthService.register as jest.Mock).mockRejectedValue(new Error(errorMessage));
 
     render(<RegisterPage />);
 
@@ -93,6 +145,10 @@ describe("RegisterPage", () => {
       fireEvent.change(screen.getByLabelText("Password"), { target: { value: "StrongPass123" } });
       fireEvent.change(screen.getByLabelText("Confirm Password"), { target: { value: "StrongPass123" } });
       fireEvent.submit(screen.getByRole("form"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(errorMessage);
     });
   });
 }); 

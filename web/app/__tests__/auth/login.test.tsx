@@ -2,15 +2,47 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import LoginPage from "@/app/auth/login/page";
 import { useRouter, useSearchParams } from "next/navigation";
 import { act } from "react";
+import { AuthService } from "@/services/auth/AuthService";
 
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }));
 
+jest.mock("@/services/auth/AuthService", () => {
+  const mockInstance = {
+    login: jest.fn(),
+    setToken: jest.fn(),
+  };
+
+  return {
+    AuthService: {
+      getInstance: jest.fn(() => mockInstance),
+    },
+  };
+});
+
 describe("LoginPage", () => {
+  const mockRouter = { push: jest.fn() };
+  let mockAuthService: jest.Mocked<Partial<AuthService>>;
+
   beforeEach(() => {
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
+    mockRouter.push.mockClear();
+
+    mockAuthService = (AuthService.getInstance() as jest.Mocked<Partial<AuthService>>);
+    mockAuthService.login.mockResolvedValue({ data: { token: 'fake-token', user: {} } });
+
+    // Mock localStorage
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      },
+      writable: true,
+    });
   });
 
   it("renders login form with all fields", () => {
@@ -62,37 +94,33 @@ describe("LoginPage", () => {
   });
 
   it("submits form with valid data", async () => {
-    const mockRouter = { push: jest.fn() };
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
-
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
-
     render(<LoginPage />);
+
+    const validData = {
+      email: "test@example.com",
+      password: "password123",
+    };
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText("Email"), {
-        target: { value: "test@example.com" },
+        target: { value: validData.email },
       });
       fireEvent.change(screen.getByLabelText("Password"), {
-        target: { value: "password123" },
+        target: { value: validData.password },
       });
       fireEvent.submit(screen.getByRole("form"));
     });
 
     await waitFor(() => {
+      expect(mockAuthService.login).toHaveBeenCalledWith(validData);
+      expect(localStorage.setItem).toHaveBeenCalledWith('token', 'fake-token');
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
     });
   });
 
   it("handles login error", async () => {
     const errorMessage = "Invalid credentials";
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ message: errorMessage }),
-    });
+    mockAuthService.login = jest.fn().mockRejectedValue(new Error(errorMessage));
 
     render(<LoginPage />);
 

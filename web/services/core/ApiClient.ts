@@ -1,9 +1,9 @@
-import { ApiClientConfig, ApiResponse, RequestConfig } from './types';
+import { ApiClientConfig, ApiResponse, RequestConfig, ApiHeaders } from './types';
 import { ApiError } from './ApiError';
 
 export class ApiClient {
   protected readonly baseURL: string;
-  protected readonly defaultConfig: RequestConfig;
+  protected readonly defaultConfig: RequestConfig & { headers: ApiHeaders };
 
   constructor(config: ApiClientConfig) {
     this.baseURL = config.baseURL.replace(/\/$/, ''); // Remove trailing slash
@@ -96,13 +96,13 @@ export class ApiClient {
     return url.toString();
   }
 
-  private mergeConfig(config?: RequestConfig): RequestConfig {
+  private mergeConfig(config?: RequestConfig): RequestConfig & { headers: ApiHeaders } {
     return {
       ...this.defaultConfig,
       ...config,
       headers: {
         ...this.defaultConfig.headers,
-        ...config?.headers,
+        ...(config?.headers as ApiHeaders),
       },
     };
   }
