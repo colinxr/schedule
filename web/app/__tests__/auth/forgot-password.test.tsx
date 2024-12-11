@@ -1,10 +1,26 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ForgotPasswordPage from "@/app/auth/forgot-password/page";
 import { act } from "react";
+import { AuthService } from "@/services/auth/AuthService";
+
+jest.mock("@/services/auth/AuthService", () => {
+  const mockInstance = {
+    forgotPassword: jest.fn(),
+  };
+
+  return {
+    AuthService: {
+      getInstance: jest.fn(() => mockInstance),
+    },
+  };
+});
 
 describe("ForgotPasswordPage", () => {
+  let mockAuthService: ReturnType<typeof AuthService.getInstance>;
+
   beforeEach(() => {
-    global.fetch = jest.fn();
+    mockAuthService = AuthService.getInstance();
+    (mockAuthService.forgotPassword as jest.Mock).mockResolvedValue({ data: null });
   });
 
   it("renders forgot password form", () => {
@@ -29,20 +45,19 @@ describe("ForgotPasswordPage", () => {
   });
 
   it("shows success message after submitting valid email", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ message: "Reset email sent" }),
-    } as Response);
-
     render(<ForgotPasswordPage />);
 
+    const validEmail = "test@example.com";
+
     await act(async () => {
-      const emailInput = screen.getByLabelText("Email");
-      fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: validEmail },
+      });
       fireEvent.submit(screen.getByRole("form"));
     });
 
     await waitFor(() => {
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith({ email: validEmail });
       expect(screen.getByText(/If an account exists with that email address/)).toBeInTheDocument();
       expect(screen.getByText("Return to login")).toBeInTheDocument();
     });
@@ -50,22 +65,19 @@ describe("ForgotPasswordPage", () => {
 
   it("handles API errors gracefully", async () => {
     const errorMessage = "Failed to send reset email";
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ message: errorMessage }),
-    } as Response);
+    (mockAuthService.forgotPassword as jest.Mock).mockRejectedValue(new Error(errorMessage));
 
     render(<ForgotPasswordPage />);
 
     await act(async () => {
-      const emailInput = screen.getByLabelText("Email");
-      fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "test@example.com" },
+      });
       fireEvent.submit(screen.getByRole("form"));
     });
 
     await waitFor(() => {
-      const alert = screen.getByRole("alert");
-      expect(alert).toHaveTextContent(errorMessage);
+      expect(screen.getByRole("alert")).toHaveTextContent(errorMessage);
     });
   });
 }); 

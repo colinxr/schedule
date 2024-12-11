@@ -8,6 +8,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AuthService } from "@/services/auth/AuthService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const authService = AuthService.getInstance();
 
   useEffect(() => {
     if (searchParams?.get("registered") === "true") {
@@ -29,19 +31,11 @@ export default function LoginPage() {
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
-      }
-
+      const response = await authService.login(data);
+      
+      // Store token in localStorage for persistence
+      localStorage.setItem('token', response.data.token);
+      
       router.push("/dashboard");
     } catch (error) {
       if (error instanceof Error) {

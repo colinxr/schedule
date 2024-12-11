@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { z } from "zod";
 import Link from "next/link";
 import { useState } from "react";
+import { AuthService } from "@/services/auth/AuthService";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -14,22 +15,11 @@ const forgotPasswordSchema = z.object({
 
 export default function ForgotPasswordPage() {
   const [isEmailSent, setIsEmailSent] = useState(false);
+  const authService = AuthService.getInstance();
 
   const handleForgotPassword = async (data: z.infer<typeof forgotPasswordSchema>) => {
     try {
-      const response = await fetch("/api/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to send reset email");
-      }
-
+      await authService.forgotPassword(data);
       setIsEmailSent(true);
     } catch (error) {
       if (error instanceof Error) {
@@ -48,7 +38,7 @@ export default function ForgotPasswordPage() {
           </AlertDescription>
         </Alert>
         <div className="mt-4 text-center">
-          <Link href="/auth/login" className="text-sm hover:underline">
+          <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
             Return to login
           </Link>
         </div>
@@ -65,9 +55,9 @@ export default function ForgotPasswordPage() {
         onSubmit={handleForgotPassword}
         submitText="Send Reset Link"
         footer={
-          <p className="text-gray-400">
+          <p className="text-gray-500">
             Remember your password?{" "}
-            <Link href="/auth/login" className="text-sm hover:underline">
+            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
               Sign in
             </Link>
           </p>
