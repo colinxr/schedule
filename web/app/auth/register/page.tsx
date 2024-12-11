@@ -8,45 +8,38 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const registerSchema = z.object({
-  first_name: z.string().min(2, "First name must be at least 2 characters"),
-  last_name: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
   password: z.string()
+    .min(1, "Password is required")
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
-  password_confirmation: z.string()
+  password_confirmation: z.string().min(1, "Please confirm your password")
 }).refine((data) => data.password === data.password_confirmation, {
   message: "Passwords do not match",
-  path: ["password_confirmation"],
+  path: ["password_confirmation"]
 });
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const handleRegister = async (data: z.infer<typeof registerSchema>) => {
-    try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+    const response = await fetch("/api/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
-      }
-
-      router.push("/auth/login?registered=true");
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error("Registration failed");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Registration failed");
     }
+
+    router.push("/auth/login?registered=true");
   };
 
   return (

@@ -8,19 +8,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface AuthFormProps {
+interface AuthFormProps<T extends z.ZodSchema> {
   title: string;
   description?: string;
-  schema: z.ZodObject<any>;
-  onSubmit: (data: any) => Promise<void>;
+  schema: T;
+  onSubmit: (data: z.infer<T>) => Promise<void>;
   submitText: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
 }
 
-export function AuthForm({
+export function AuthForm<T extends z.ZodSchema>({
   title,
   description,
   schema,
@@ -29,19 +30,23 @@ export function AuthForm({
   children,
   footer,
   className,
-}: AuthFormProps) {
+}: AuthFormProps<T>) {
   const [isLoading, setIsLoading] = useState(false);
-  const form = useForm({
+  const [error, setError] = useState<string | null>(null);
+  
+  const form = useForm<z.infer<T>>({
     resolver: zodResolver(schema),
-    defaultValues: {},
+    mode: "onBlur",
+    defaultValues: {} as z.infer<T>,
   });
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: z.infer<T>) => {
     try {
       setIsLoading(true);
+      setError(null);
       await onSubmit(data);
     } catch (error) {
-      console.error("Form submission error:", error);
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +60,12 @@ export function AuthForm({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" role="form">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             {children}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Loading..." : submitText}

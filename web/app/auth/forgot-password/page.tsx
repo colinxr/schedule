@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <AuthForm
-        title="Reset Password"
+        title="Forgot Password"
         description="Enter your email address and we'll send you instructions to reset your password."
         schema={forgotPasswordSchema}
         onSubmit={handleForgotPassword}

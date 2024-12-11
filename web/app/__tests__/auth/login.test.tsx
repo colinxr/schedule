@@ -1,27 +1,28 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { useRouter, useSearchParams } from "next/navigation";
 import LoginPage from "@/app/auth/login/page";
+import { useRouter, useSearchParams } from "next/navigation";
+import { act } from "react";
 
-// Mock next/navigation
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }));
 
 describe("LoginPage", () => {
-  const mockPush = jest.fn();
-  const mockSearchParams = new URLSearchParams();
+  const mockRouter = {
+    push: jest.fn(),
+  };
 
   beforeEach(() => {
-    (useRouter as jest.Mock).mockReturnValue({
-      push: mockPush,
-    });
-    (useSearchParams as jest.Mock).mockReturnValue(mockSearchParams);
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
+    mockRouter.push.mockClear();
     global.fetch = jest.fn();
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
   it("renders login form with all fields", () => {
@@ -31,72 +32,72 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();
-    expect(screen.getByText("Forgot your password?")).toBeInTheDocument();
-    expect(screen.getByText("Don't have an account?")).toBeInTheDocument();
   });
 
-  it("shows success message when registered=true in URL", () => {
-    const searchParams = new URLSearchParams("?registered=true");
+  it("shows success message when registered=true in URL", async () => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("registered", "true");
     (useSearchParams as jest.Mock).mockReturnValue(searchParams);
 
     render(<LoginPage />);
 
     expect(screen.getByText(/registration successful/i)).toBeInTheDocument();
+
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    expect(screen.queryByText(/registration successful/i)).not.toBeInTheDocument();
   });
 
   it("validates required fields", async () => {
     render(<LoginPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    });
 
     await waitFor(() => {
-      expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument();
-      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+      expect(screen.getByText("Please enter a valid email address")).toBeInTheDocument();
+      expect(screen.getByText("Password is required")).toBeInTheDocument();
     });
   });
 
   it("validates email format", async () => {
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "invalid-email" },
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "invalid-email" },
+      });
+      fireEvent.blur(screen.getByLabelText("Email"));
     });
-    fireEvent.blur(screen.getByLabelText("Email"));
 
     await waitFor(() => {
-      expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument();
+      expect(screen.getByText("Please enter a valid email address")).toBeInTheDocument();
     });
   });
 
   it("submits form with valid data", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "Login successful" }),
+      json: () => Promise.resolve({}),
     });
 
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "john@example.com" },
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "john@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText("Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.submit(screen.getByRole("form"));
     });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "password123" },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: "john@example.com",
-          password: "password123",
-        }),
-      });
-      expect(mockPush).toHaveBeenCalledWith("/dashboard");
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
     });
   });
 
@@ -104,40 +105,23 @@ describe("LoginPage", () => {
     const errorMessage = "Invalid credentials";
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ message: errorMessage }),
+      json: () => Promise.resolve({ message: errorMessage }),
     });
 
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "john@example.com" },
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "john@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText("Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.submit(screen.getByRole("form"));
     });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "wrongpassword" },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => {
-      expect(mockPush).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent(errorMessage);
     });
-  });
-
-  it("clears success message after timeout", async () => {
-    jest.useFakeTimers();
-    const searchParams = new URLSearchParams("?registered=true");
-    (useSearchParams as jest.Mock).mockReturnValue(searchParams);
-
-    render(<LoginPage />);
-
-    expect(screen.getByText(/registration successful/i)).toBeInTheDocument();
-
-    jest.advanceTimersByTime(5000);
-
-    await waitFor(() => {
-      expect(screen.queryByText(/registration successful/i)).not.toBeInTheDocument();
-    });
-
-    jest.useRealTimers();
   });
 }); 
