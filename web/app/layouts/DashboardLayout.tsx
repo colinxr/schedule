@@ -4,19 +4,15 @@ import Header from '../components/dashboard/Header';
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  user: {
-    name: string;
-    email: string;
-  };
 }
 
-export default function DashboardLayout({ children, user }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar user={user} />
-      <div className="ml-64 min-h-screen">
-        <Header />
-        <main className="p-6">
+    <div className="min-h-screen bg-background flex w-full">
+      <Sidebar />
+      <div className="flex-1">
+        <Header className="sticky top-0 z-50" />
+        <main className="container mx-auto p-6">
           {children}
         </main>
       </div>

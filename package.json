@@ -1,5 +1,1 @@
-{
-  "dependencies": {
-    "@clerk/nextjs": "^6.9.0"
-  }
-}
+{}
