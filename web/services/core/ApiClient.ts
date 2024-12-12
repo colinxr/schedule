@@ -6,7 +6,7 @@ export class ApiClient {
   protected readonly defaultConfig: RequestConfig & { headers: ApiHeaders };
 
   constructor(config: ApiClientConfig) {
-    this.baseURL = (config.baseURL || import.meta.env.VITE_API_BASE_URL).replace(/\/$/, '');
+    this.baseURL = (config.baseURL || process.env.NEXT_PUBLIC_API_BASE_URL).replace(/\/$/, '');
     this.defaultConfig = {
       timeout: config.timeout || 10000,
       headers: {
