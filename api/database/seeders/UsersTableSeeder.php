@@ -14,7 +14,8 @@ class UsersTableSeeder extends Seeder
         // Create 5 artists
         for ($i = 1; $i <= 5; $i++) {
             $user = User::create([
-                'name' => fake()->name(),
+                'first_name' => fake()->firstName(),
+                'last_name' => fake()->lastName(),
                 'email' => fake()->unique()->safeEmail(),
                 'password' => Hash::make('password'),
                 'role' => 'artist',
@@ -36,7 +37,8 @@ class UsersTableSeeder extends Seeder
         // Create 50 clients
         for ($i = 1; $i <= 50; $i++) {
             $user = User::create([
-                'name' => fake()->name(),
+                'first_name' => fake()->firstName(),
+                'last_name' => fake()->lastName(),
                 'email' => fake()->unique()->safeEmail(),
                 'password' => Hash::make('password'),
                 'role' => 'client',
