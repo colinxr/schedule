@@ -1,4 +1,4 @@
-import ConversationList from '../components/dashboard/ConversationList';
+import ConversationList from '../../components/dashboard/ConversationList';
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
