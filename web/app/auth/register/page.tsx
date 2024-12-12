@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/services/auth/AuthService";
+import { AuthService } from "@/services/api/AuthService";
 
 const registerSchema = z.object({
   first_name: z.string().min(1, "First name is required"),

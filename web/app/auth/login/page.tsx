@@ -8,7 +8,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AuthService } from "@/services/auth/AuthService";
+import { AuthService } from "@/services/api/AuthService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -36,7 +36,7 @@ export default function LoginPage() {
       // Store token in localStorage for persistence
       localStorage.setItem('token', response.data.token);
       
-      router.push("/dashboard");
+      router.push("/a/dashboard");
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);

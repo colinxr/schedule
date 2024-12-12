@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { z } from "zod";
 import Link from "next/link";
 import { useState } from "react";
-import { AuthService } from "@/services/auth/AuthService";
+import { AuthService } from "@/services/api/AuthService";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
