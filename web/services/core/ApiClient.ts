@@ -6,7 +6,7 @@ export class ApiClient {
   protected readonly defaultConfig: RequestConfig & { headers: ApiHeaders };
 
   constructor(config: ApiClientConfig) {
-    this.baseURL = config.baseURL.replace(/\/$/, ''); // Remove trailing slash
+    this.baseURL = (config.baseURL || import.meta.env.VITE_API_BASE_URL).replace(/\/$/, '');
     this.defaultConfig = {
       timeout: config.timeout || 10000,
       headers: {
@@ -15,14 +15,38 @@ export class ApiClient {
         ...config.headers,
       },
     };
+
+    if (config.requestInterceptor) {
+      this.addRequestInterceptor(config.requestInterceptor);
+    }
+
+    if (config.responseInterceptor) {
+      this.addResponseInterceptor(config.responseInterceptor);
+    }
+  }
+
+  private requestInterceptors: ((config: RequestConfig) => RequestConfig)[] = [];
+  
+  public addRequestInterceptor(interceptor: (config: RequestConfig) => RequestConfig) {
+    this.requestInterceptors.push(interceptor);
+  }
+
+  private responseInterceptors: ((response: ApiResponse<any>) => ApiResponse<any>)[] = [];
+  
+  public addResponseInterceptor(interceptor: (response: ApiResponse<any>) => ApiResponse<any>) {
+    this.responseInterceptors.push(interceptor);
   }
 
   protected async request<T>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
-    const url = this.createUrl(endpoint, config?.params);
-    const requestConfig = this.mergeConfig(config);
+    let requestConfig = this.mergeConfig(config);
+
+    for (const interceptor of this.requestInterceptors) {
+      requestConfig = interceptor(requestConfig);
+    }
+
+    const url = this.createUrl(endpoint, requestConfig.params);
     const controller = new AbortController();
 
-    // Set up timeout
     const timeout = setTimeout(() => {
       controller.abort();
     }, requestConfig.timeout || this.defaultConfig.timeout);
@@ -40,8 +64,13 @@ export class ApiClient {
         throw ApiError.fromResponse(response, data);
       }
 
-      const data = await response.json();
-      return data as ApiResponse<T>;
+      let data = await response.json() as ApiResponse<T>;
+
+      for (const interceptor of this.responseInterceptors) {
+        data = interceptor(data);
+      }
+
+      return data;
     } catch (error) {
       clearTimeout(timeout);
 

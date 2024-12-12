@@ -17,7 +17,9 @@ export interface RequestConfig extends RequestInit {
 export interface ApiClientConfig {
   baseURL: string;
   timeout?: number;
-  headers?: Record<string, string>;
+  headers?: ApiHeaders;
+  requestInterceptor?: (config: RequestConfig) => RequestConfig;
+  responseInterceptor?: (response: ApiResponse<any>) => ApiResponse<any>;
 }
 
 export interface ApiHeaders extends Record<string, string> {
