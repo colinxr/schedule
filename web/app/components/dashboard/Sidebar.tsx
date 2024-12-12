@@ -34,7 +34,7 @@ export default function Sidebar() {
   return (
     <aside className={cn(
       "h-screen bg-background border-r transition-all duration-300 hidden md:block",
-      isOpen ? "w-[300px]" : "w-[60px]"
+      isOpen ? "w-[250px]" : "w-[60px]"
     )}>
       <div className="h-16 flex items-center px-4 border-b justify-between">
         {isOpen && <h2 className="font-semibold">Schedule</h2>}

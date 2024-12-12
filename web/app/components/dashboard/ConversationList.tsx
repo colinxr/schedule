@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import ConversationCard from "./ConversationCard"
-import { useState } from "react"
+// import { useState } from "react"
 
 interface Conversation {
   id: string
@@ -11,7 +11,7 @@ interface Conversation {
 }
 
 export default function ConversationList() {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+//   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // This is mock data - replace with actual data fetching
   const conversations: Conversation[] = [
@@ -48,8 +48,8 @@ export default function ConversationList() {
             clientName={conversation.clientName}
             lastMessage={conversation.lastMessage}
             timestamp={conversation.timestamp}
-            isSelected={selectedId === conversation.id}
-            onClick={() => setSelectedId(conversation.id)}
+            // isSelected={selectedId === conversation.id}
+            // onClick={() => setSelectedId(conversation.id)}
             showSeparator={index < conversations.length - 1}
           />
         ))}

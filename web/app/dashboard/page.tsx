@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function DashboardPage() {
   return (
-    <Card className="h-[calc(100vh-theme(spacing.16))] flex">
+    <div className="h-[calc(100vh-theme(spacing.16))] flex">
       {/* Left panel - Conversation List */}
       <div className="w-80">
         <ConversationList />
@@ -16,6 +16,6 @@ export default function DashboardPage() {
       <div className="flex-1 p-6 flex items-center justify-center text-muted-foreground">
         Select a conversation to view messages
       </div>
-    </Card>
+    </div>
   );
 } 
