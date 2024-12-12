@@ -1,118 +1,71 @@
-"use client";
+'use client';
 
-import { AuthForm } from "@/app/components/auth/AuthForm";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { z } from "zod";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { AuthService } from "@/services/auth/AuthService";
-
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const authService = AuthService.getInstance();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (searchParams?.get("registered") === "true") {
-      setShowSuccessMessage(true);
-      const timer = setTimeout(() => setShowSuccessMessage(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
-
-  const handleLogin = async (data: z.infer<typeof loginSchema>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const response = await authService.login(data);
-      
-      // Store token in localStorage for persistence
-      localStorage.setItem('token', response.data.token);
-      
-      router.push("/a/conversations");
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error("Login failed");
+      await login(email, password);
+    } catch (err) {
+      setError('Invalid credentials');
     }
   };
 
   return (
-    <div className="w-full max-w-md space-y-4">
-      {showSuccessMessage && (
-        <Alert className="bg-green-900/50 border-green-500/50 text-green-200">
-          <AlertDescription>
-            Registration successful! Please log in with your credentials.
-          </AlertDescription>
-        </Alert>
-      )}
-      <AuthForm
-        title="Welcome Back"
-        description="Sign in to your artist account"
-        schema={loginSchema}
-        onSubmit={handleLogin}
-        submitText="Sign In"
-        footer={
-          <div className="space-y-2 text-center">
-            <p>
-              <Link
-                href="/auth/forgot-password"
-                className="text-blue-600 hover:text-blue-700 text-sm hover:underline"
-              >
-                Forgot your password?
-              </Link>
-            </p>
-            <p className="text-gray-500">
-              Don't have an account?{" "}
-              <Link href="/auth/register" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
-                Sign up
-              </Link>
-            </p>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Sign in to your account</h1>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="text-red-500 text-sm text-center">{error}</div>
+          )}
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
           </div>
-        }
-      >
-        <FormField
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input 
-                  type="email" 
-                  placeholder="john@example.com" 
-                  className="form-input"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage className="form-error" />
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input 
-                  type="password" 
-                  className="form-input"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage className="form-error" />
-            </FormItem>
-          )}
-        />
-      </AuthForm>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            Sign in
+          </button>
+        </form>
+      </div>
     </div>
   );
 } 
