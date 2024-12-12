@@ -67,7 +67,7 @@ export class AuthService extends ApiClient {
     return this.post<void>('reset-password', data);
   }
 
-  public async me(): Promise<ApiResponse<User>> {
+  public async getUser(): Promise<ApiResponse<User>> {
     return this.get<User>('me');
   }
 

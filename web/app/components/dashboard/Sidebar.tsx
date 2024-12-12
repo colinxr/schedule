@@ -7,9 +7,9 @@ import { useState, useEffect } from 'react';
 import { ChevronRight, LayoutDashboard, Settings, FolderKanban } from "lucide-react";
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Dashboard', href: '/a', icon: LayoutDashboard },
+  { name: 'Projects', href: '/a/projects', icon: FolderKanban },
+  { name: 'Settings', href: '/a/settings', icon: Settings },
 ];
 
 export default function Sidebar() {

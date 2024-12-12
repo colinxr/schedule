@@ -8,7 +8,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AuthService } from "@/services/api/AuthService";
+import { AuthService } from "@/services/auth/AuthService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
