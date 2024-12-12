@@ -36,18 +36,18 @@ export default function ConversationCard({
           isSelected && "bg-accent"
         )}
       >
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{clientName}</span>
-            <Badge variant="secondary" className={cn("text-xs", statusColors[status])}>
-              {status}
-            </Badge>
-          </div>
-          <span className="text-sm text-muted-foreground">{timestamp}</span>
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-medium">{clientName}</span>
+          <Badge variant="secondary" className={cn("text-xs", statusColors[status])}>
+            {status}
+          </Badge>
         </div>
-        <p className="text-sm text-muted-foreground truncate">
+        <p className="text-sm text-muted-foreground truncate mb-2">
           {lastMessage}
         </p>
+        <span className="text-xs text-muted-foreground">
+          {timestamp}
+        </span>
       </div>
       {showSeparator && <Separator />}
     </>

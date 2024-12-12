@@ -18,6 +18,7 @@ export interface Conversation {
   };
   client: {
     id: number;
+    name: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -36,6 +37,14 @@ export interface Conversation {
     sender_id: number;
     created_at: string;
     read_at: string | null;
+    data: {
+      id: number;
+      content: string;
+      sender_type: string;
+      sender_id: number;
+      created_at: string;
+      read_at: string | null;
+    }[];
   }[];
 }
 

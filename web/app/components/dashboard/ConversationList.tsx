@@ -5,9 +5,18 @@ import { Card } from "@/components/ui/card"
 import ConversationCard from "./ConversationCard"
 import { useConversations } from "@/hooks/useConversations";
 import { formatDistanceToNow } from 'date-fns';
+import { Conversation } from "@/services/api/ConversationApi";
 
-export default function ConversationList() {
+interface ConversationListProps {
+  onSelectConversation?: (conversation: Conversation) => void;
+  selectedId?: number;
+}
+
+export default function ConversationList({ onSelectConversation, selectedId }: ConversationListProps) {
   const { data: conversations, isLoading, error } = useConversations();
+
+  console.log(conversations);
+  
 
   if (isLoading) return <div className="p-4">Loading conversations...</div>;
   if (error) return <div className="p-4 text-red-500">Error loading conversations</div>;
@@ -22,10 +31,12 @@ export default function ConversationList() {
           <ConversationCard
             key={conversation.id}
             clientName={conversation.client.name}
-            lastMessage={conversation.messages.data[0]?.content || 'No messages yet'}
+            lastMessage={conversation.messages[0]?.content || 'No messages yet'}
             timestamp={formatDistanceToNow(new Date(conversation.created_at), { addSuffix: true })}
             status={conversation.status}
             showSeparator={index < conversations.length - 1}
+            isSelected={selectedId === conversation.id}
+            onClick={() => onSelectConversation?.(conversation)}
           />
         ))}
       </ScrollArea>
