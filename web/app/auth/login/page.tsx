@@ -36,7 +36,7 @@ export default function LoginPage() {
       // Store token in localStorage for persistence
       localStorage.setItem('token', response.data.token);
       
-      router.push("/a/dashboard");
+      router.push("/a/conversations");
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);

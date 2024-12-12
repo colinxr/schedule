@@ -1,20 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { ConversationApi, Conversation } from '../services/api/ConversationService';
+import { ConversationApi, Conversation } from '../services/api/ConversationApi';
 
-const api = new ConversationApi({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-});
+const api = new ConversationApi();
 
 export function useConversations() {
-  return useQuery<Conversation[], Error>({
+  return useQuery<Conversation[]>({
     queryKey: ['conversations'],
     queryFn: async () => {
-      try {
-        const response = await api.getConversations();
-        return response.data;
-      } catch (error) {
-        throw new Error('Failed to fetch conversations');
-      }
+      const response = await api.getConversations();
+      return response.data;
     },
   });
 } 

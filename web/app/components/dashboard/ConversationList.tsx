@@ -20,10 +20,11 @@ export default function ConversationList() {
         {conversations?.map((conversation, index) => (
           <ConversationCard
             key={conversation.id}
-            clientName={`${conversation.client.first_name} ${conversation.client.last_name}`}
-            lastMessage={conversation.messages[0]?.content || 'No messages yet'}
-            timestamp={new Date(conversation.last_message_at).toLocaleDateString()}
-            showSeparator={index < conversations.length - 1}
+            clientName={conversation.client.name}
+            lastMessage={conversation.messages.data[0]?.content || 'No messages yet'}
+            timestamp={new Date(conversation.created_at).toLocaleDateString()}
+            status={conversation.status}
+            showSeparator={index < (conversations?.length || 0) - 1}
           />
         ))}
       </ScrollArea>

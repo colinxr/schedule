@@ -1,5 +1,6 @@
 import { ApiClient } from '../core/ApiClient';
 import { ApiResponse } from '../core/types';
+import { AuthService } from '../auth/AuthService';
 
 export interface Conversation {
   id: number;
@@ -38,33 +39,29 @@ export interface Conversation {
   }[];
 }
 
-export class ConversationService extends ApiClient {
-  private constructor() {
+export class ConversationApi extends ApiClient {
+  constructor() {
+    const authService = AuthService.getInstance();
     super({
       baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-      },
+      headers: authService['defaultConfig'].headers,
+    });
+
+    // Add request interceptor to log headers
+    this.addRequestInterceptor((config) => {
+      console.log('Request Headers:', config.headers);
+      return config;
     });
   }
-  /**
-   * Fetch all conversations for the authenticated user
-   * Will return different results based on user role (artist/client)
-   */
+
   public async getConversations(): Promise<ApiResponse<Conversation[]>> {
-    return this.get<Conversation[]>('/conversations');
+    return this.get<Conversation[]>('conversations');
   }
 
-  /**
-   * Fetch a single conversation by ID
-   */
   public async getConversation(id: number): Promise<ApiResponse<Conversation>> {
-    return this.get<Conversation>(`/conversations/${id}`);
+    return this.get<Conversation>(`conversations/${id}`);
   }
 
-  /**
-   * Create a new conversation with an artist
-   */
   public async createConversation(data: {
     artist_id: number;
     description: string;
@@ -73,6 +70,6 @@ export class ConversationService extends ApiClient {
     phone?: string;
     instagram?: string;
   }): Promise<ApiResponse<Conversation>> {
-    return this.post<Conversation>('/conversations', data);
+    return this.post<Conversation>('conversations', data);
   }
 } 
