@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import ConversationCard from "./ConversationCard"
 import { useConversations } from "@/hooks/useConversations";
+import { formatDistanceToNow } from 'date-fns';
 
 export default function ConversationList() {
   const { data: conversations, isLoading, error } = useConversations();
@@ -20,11 +21,11 @@ export default function ConversationList() {
         {conversations?.map((conversation, index) => (
           <ConversationCard
             key={conversation.id}
-            clientName={`${conversation.client.first_name} ${conversation.client.last_name}`}
-            lastMessage={conversation.messages[0]?.content || 'No messages yet'}
-            timestamp={new Date(conversation.created_at).toLocaleDateString()}
+            clientName={conversation.client.name}
+            lastMessage={conversation.messages.data[0]?.content || 'No messages yet'}
+            timestamp={formatDistanceToNow(new Date(conversation.created_at), { addSuffix: true })}
             status={conversation.status}
-            showSeparator={index < (conversations?.length || 0) - 1}
+            showSeparator={index < conversations.length - 1}
           />
         ))}
       </ScrollArea>

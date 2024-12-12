@@ -12,12 +12,6 @@ interface ConversationCardProps {
   showSeparator?: boolean
 }
 
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800",
-  active: "bg-green-100 text-green-800",
-  closed: "bg-gray-100 text-gray-800"
-} as const;
-
 export default function ConversationCard({
   clientName,
   lastMessage,
@@ -27,6 +21,12 @@ export default function ConversationCard({
   onClick,
   showSeparator = true,
 }: ConversationCardProps) {
+  const statusColors = {
+    pending: "bg-yellow-500",
+    active: "bg-green-500",
+    closed: "bg-gray-500"
+  };
+
   return (
     <>
       <div
@@ -36,16 +36,16 @@ export default function ConversationCard({
           isSelected && "bg-accent"
         )}
       >
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2">
             <span className="font-medium">{clientName}</span>
-            <Badge variant="secondary" className={statusColors[status]}>
+            <Badge variant="secondary" className={cn("text-xs", statusColors[status])}>
               {status}
             </Badge>
           </div>
           <span className="text-sm text-muted-foreground">{timestamp}</span>
         </div>
-        <p className="text-sm text-muted-foreground truncate mt-1">
+        <p className="text-sm text-muted-foreground truncate">
           {lastMessage}
         </p>
       </div>

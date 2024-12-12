@@ -3,39 +3,27 @@ import { ApiResponse } from '../core/types';
 
 export interface Conversation {
   id: number;
-  artist_id: number;
-  client_id: number;
   status: 'pending' | 'active' | 'closed';
-  last_message_at: string;
   created_at: string;
-  updated_at: string;
-  artist: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
   client: {
     id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  details: {
-    description: string;
-    reference_images: string[] | null;
-    email: string;
-    phone: string | null;
-    instagram: string | null;
+    name: string;
+    details: {
+      phone: string | null;
+      email: string | null;
+      instagram: string | null;
+    };
   };
   messages: {
-    id: number;
-    content: string;
-    sender_type: string;
-    sender_id: number;
-    created_at: string;
-    read_at: string | null;
-  }[];
+    data: {
+      id: number;
+      content: string;
+      created_at: string;
+      read_at: string | null;
+      sender_type: string;
+      sender_id: number;
+    }[];
+  };
 }
 
 export class ConversationService extends ApiClient {
