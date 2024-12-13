@@ -5,8 +5,7 @@ import { AuthService } from '../auth/AuthService';
 export interface Message {
   id: number;
   content: string;
-  sender_type: string;
-  sender_id: number;
+  user_id: number;
   created_at: string;
   read_at: string | null;
 }
@@ -70,5 +69,21 @@ export class ConversationService extends ApiClient {
     instagram?: string;
   }): Promise<ApiResponse<Conversation>> {
     return this.post<Conversation>('conversations', data);
+  }
+
+  public async sendMessage(conversationId: number, content: string): Promise<ApiResponse<Message>> {
+    console.log('got here');
+    console.log(content);
+    
+    
+    if (!conversationId) {
+      console.log(conversationId);
+      
+      throw new Error('Invalid conversation ID');
+    }
+
+    return this.post<Message>(`conversations/${conversationId}/messages`, {
+      content
+    });
   }
 } 

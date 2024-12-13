@@ -1,8 +1,7 @@
 'use client';
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Conversation } from "@/services/api/ConversationApi";
-import { formatDistanceToNow } from "date-fns";
+import { Conversation } from "@/services/api/ConversationService";
 import { getTimestamp } from "@/lib/utils"
 import MessageForm from "./MessageForm";
 

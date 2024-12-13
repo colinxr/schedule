@@ -14,8 +14,8 @@ class ConversationFactory extends Factory
     public function definition()
     {
         return [
-            'artist_id' => User::factory()->create(['role' => 'artist']),
-            'client_id' => User::factory()->create(['role' => 'client']),
+            'artist_id' => User::factory()->create(['role' => 'artist'])->id,
+            'client_id' => User::factory()->create(['role' => 'client'])->id,
         ];
     }
 

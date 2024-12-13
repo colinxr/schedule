@@ -17,17 +17,17 @@ const navigation = [
 export default function Navbar() {
   const pathname = usePathname();
   const isConversationRoute = /\/conversations\/\w+/.test(pathname || '');
-  const isStoreOpen = useOpenConversations((state: OpenConversationStore) => state.isOpen);
+  const conversationIsOpen = useOpenConversations((state: OpenConversationStore) => state.isOpen);
   
   const defaultState = isConversationRoute || window.innerWidth < 768 ? false : true;
   const [isOpen, setIsOpen] = useState(defaultState);
   
   // Add effect to handle store changes
   useEffect(() => {
-    if (isStoreOpen) {
+    if (conversationIsOpen) {
       setIsOpen(false);
     }
-  }, [isStoreOpen]);
+  }, [conversationIsOpen]);
 
   useEffect(() => {
     const handleResize = () => {

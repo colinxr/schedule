@@ -12,16 +12,21 @@ use Illuminate\Support\Facades\Cache;
 
 class MessageController extends Controller
 {
-    public function store(StoreMessageRequest $request)
+    public function store(Conversation $conversation, StoreMessageRequest $request)
     {
-        $conversation = Conversation::findOrFail($request->conversation_id);
-        
+        if (!$conversation || !$conversation->exists) {
+            return response()->json([
+                'message' => 'Conversation not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         // Ensure user has access to this conversation
         abort_unless(Auth::id() === $conversation->artist_id, 403);
 
         try {
             $message = Message::create([
                 ...$request->validated(),
+                'conversation_id' => $conversation->id,
                 'user_id' => Auth::id(),
             ]);
             

@@ -2,14 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\GoogleCalendarController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\WorkScheduleController;
 use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\Artist\ClientController;
-use App\Http\Controllers\Api\MessageController;
-
 
 /*
 |--------------------------------------------------------------------------

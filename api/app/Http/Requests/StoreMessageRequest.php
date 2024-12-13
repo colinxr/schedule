@@ -14,7 +14,6 @@ class StoreMessageRequest extends FormRequest
     {
         return [
             'content' => 'required|string',
-            'conversation_id' => 'required|exists:conversations,id',
         ];
     }
 }

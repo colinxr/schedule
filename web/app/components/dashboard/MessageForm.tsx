@@ -1,20 +1,17 @@
+'use client';
+
 import React, { useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.bubble.css';
+import { useSendMessage } from '@/hooks/useSendMessages';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 const toolbarOptions = [
   ['bold', 'italic', 'underline', 'strike'],
   ['blockquote', 'code-block'],
-  [{ 'header': 1 }, { 'header': 2 }],
   [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-  [{ 'script': 'sub'}, { 'script': 'super' }],
-  [{ 'indent': '-1'}, { 'indent': '+1' }],
-  [{ 'direction': 'rtl' }],
-  [{ 'size': ['small', false, 'large', 'huge'] }],
-  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'font': [] }],
-  [{ 'align': [] }],
   ['clean'],
 ];
 
@@ -29,12 +26,18 @@ const editorStyle: React.CSSProperties = {
 };
 
 export default function MessageForm() {
+  const params = useParams();
+  const conversationId = params?.id ? Number(params.id) : 0;
   const [message, setMessage] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-
+  const { mutate: sendMessage, isPending } = useSendMessage(conversationId);
+  
   const handleSendMessage = () => {
-    console.log('Message sent:', message);
+    if (!message.trim()) return;
+    
+    sendMessage(message);
     setMessage('');
+    setIsExpanded(false);
   };
 
   return (
@@ -49,9 +52,17 @@ export default function MessageForm() {
         onFocus={() => setIsExpanded(true)}
         onBlur={() => setIsExpanded(false)}
       />
-      <button onClick={handleSendMessage} className="send-button ml-2 bg-blue-500 text-white py-1 px-4 rounded">
-        Send
-      </button>
+      <Button 
+        onClick={handleSendMessage} 
+        className="ml-2"
+        disabled={isPending || !message.trim()}
+      >
+        {isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          'Send'
+        )}
+      </Button>
     </div>
   );
 }
