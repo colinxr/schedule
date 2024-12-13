@@ -1,58 +1,66 @@
 import { ApiClient } from '../core/ApiClient';
 import { ApiResponse } from '../core/types';
+import { AuthService } from '../auth/AuthService';
+
+export interface Message {
+  id: number;
+  content: string;
+  sender_type: string;
+  sender_id: number;
+  created_at: string;
+  read_at: string | null;
+}
 
 export interface Conversation {
   id: number;
+  artist_id: number;
+  client_id: number;
   status: 'pending' | 'active' | 'closed';
+  last_message_at: string;
   created_at: string;
+  updated_at: string;
+  artist: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
   client: {
     id: number;
     name: string;
-    details: {
-      phone: string | null;
-      email: string | null;
-      instagram: string | null;
-    };
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  details: {
+    description: string;
+    reference_images: string[] | null;
+    email: string;
+    phone: string | null;
+    instagram: string | null;
   };
   messages: {
-    data: {
-      id: number;
-      content: string;
-      created_at: string;
-      read_at: string | null;
-      sender_type: string;
-      sender_id: number;
-    }[];
+    data: Message[];
   };
 }
 
 export class ConversationService extends ApiClient {
-  private constructor() {
+  constructor() {
+    const authService = AuthService.getInstance();
     super({
       baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-      },
+      headers: authService['defaultConfig'].headers,
     });
   }
-  /**
-   * Fetch all conversations for the authenticated user
-   * Will return different results based on user role (artist/client)
-   */
+
   public async getConversations(): Promise<ApiResponse<Conversation[]>> {
-    return this.get<Conversation[]>('/conversations');
+    return this.get<Conversation[]>('conversations');
   }
 
-  /**
-   * Fetch a single conversation by ID
-   */
   public async getConversation(id: number): Promise<ApiResponse<Conversation>> {
-    return this.get<Conversation>(`/conversations/${id}`);
+    return this.get<Conversation>(`conversations/${id}`);
   }
 
-  /**
-   * Create a new conversation with an artist
-   */
   public async createConversation(data: {
     artist_id: number;
     description: string;
@@ -61,6 +69,6 @@ export class ConversationService extends ApiClient {
     phone?: string;
     instagram?: string;
   }): Promise<ApiResponse<Conversation>> {
-    return this.post<Conversation>('/conversations', data);
+    return this.post<Conversation>('conversations', data);
   }
 } 

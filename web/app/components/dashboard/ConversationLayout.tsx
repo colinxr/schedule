@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ConversationList from '@/app/components/dashboard/ConversationList';
 import ConversationView from '@/app/components/dashboard/ConversationView';
-import { Conversation, ConversationApi } from '@/services/api/ConversationApi';
+import { Conversation, ConversationService } from '@/services/api/ConversationService';
 import { useOpenConversations } from '@/hooks/useConversationSelection';
 
 interface ConversationLayoutProps {
@@ -20,7 +20,7 @@ export default function ConversationLayout({ initialConversationId }: Conversati
     if (initialConversationId) {
       const fetchConversation = async () => {
         try {
-          const response = await new ConversationApi().getConversation(initialConversationId);
+          const response = await new ConversationService().getConversation(initialConversationId);
           setOpenConversation(response.data);
         } catch (error) {
           console.error('Failed to fetch conversation:', error);

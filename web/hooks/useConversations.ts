@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { ConversationApi, Conversation } from '../services/api/ConversationApi';
+import { ConversationService, Conversation } from '../services/api/ConversationService';
 
-const api = new ConversationApi();
+const api = new ConversationService();
 
 export function useConversations() {
   return useQuery<Conversation[]>({

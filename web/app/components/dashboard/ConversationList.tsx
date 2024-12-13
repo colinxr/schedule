@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import ConversationCard from "./ConversationCard"
 import { useConversations } from "@/hooks/useConversations";
-import { Conversation } from "@/services/api/ConversationApi";
+import { Conversation } from "@/services/api/ConversationService";
 import { getTimestamp } from "@/lib/utils"
 
 interface ConversationListProps {
