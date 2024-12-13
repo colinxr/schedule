@@ -20,7 +20,10 @@ class MessageController extends Controller
         abort_unless(Auth::id() === $conversation->artist_id, 403);
 
         try {
-            $message = Message::create($request->validated());
+            $message = Message::create([
+                ...$request->validated(),
+                'user_id' => Auth::id(),
+            ]);
             
             // Update conversation's last_message_at
             $conversation->update(['last_message_at' => now()]);

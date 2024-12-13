@@ -143,7 +143,7 @@ class MessageNotificationTest extends TestCase
                 $data = $notification->toArray($artist);
                 return $data['message_id'] === $message->id &&
                     $data['conversation_id'] === $conversation->id &&
-                    $data['sender_id'] === $client->id &&
+                    $data['user_id'] === $client->id &&
                     $data['content'] === 'Test message content';
             }
         );

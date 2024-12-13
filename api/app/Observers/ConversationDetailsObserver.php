@@ -26,7 +26,7 @@ class ConversationDetailsObserver
             $messageData = [
                 'conversation_id' => $details->conversation_id,
                 'content' => $details->description,
-                'sender_id' => $details->conversation->client_id,
+                'user_id' => $details->conversation->client_id,
             ];
 
             try {
