@@ -18,7 +18,7 @@ const toolbarOptions = [
   ['clean'],
 ];
 
-const editorStyle = {
+const editorStyle: React.CSSProperties = {
   flex: 1,
   maxHeight: '25vh',
   overflow: 'visible',

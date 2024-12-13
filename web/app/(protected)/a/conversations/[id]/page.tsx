@@ -4,7 +4,8 @@ import ConversationLayout from '@/app/components/dashboard/ConversationLayout';
 import { useEffect, useState } from 'react';
 
 export default function ConversationDetailPage() {
-  const { id } = useParams(); // Use useParams to extract the conversation ID
+  const params = useParams();
+  const id = params?.id as string;
   const [conversationId, setConversationId] = useState<number | null>(null);
 
   useEffect(() => {
