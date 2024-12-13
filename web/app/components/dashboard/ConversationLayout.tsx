@@ -18,7 +18,6 @@ export default function ConversationLayout({ initialConversationId }: Conversati
 
   useEffect(() => {
     if (initialConversationId) {
-      setOpen(true);
       const fetchConversation = async () => {
         try {
           const response = await new ConversationApi().getConversation(initialConversationId);
