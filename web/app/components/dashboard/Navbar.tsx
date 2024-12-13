@@ -12,16 +12,20 @@ const navigation = [
   { name: 'Settings', href: '/a/settings', icon: Settings },
 ];
 
-export default function Sidebar() {
+interface NavbarProps {
+  onConversationSelected?: boolean;
+}
+
+export default function Navbar({ onConversationSelected = false }: NavbarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
   
-  // Handle initial state based on screen size
+  // Handle initial state based on screen size and conversation selection
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setIsOpen(false);
-      } else if (window.innerWidth >= 1024) {
+      } else if (window.innerWidth >= 1024 && !onConversationSelected) {
         setIsOpen(true);
       }
     };
@@ -29,7 +33,16 @@ export default function Sidebar() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [onConversationSelected]);
+
+  // Collapse when conversation is selected
+  useEffect(() => {
+    console.log('onConversationSelected', onConversationSelected);
+    
+    if (onConversationSelected) {
+      setIsOpen(false);
+    }
+  }, [onConversationSelected]);
 
   return (
     <aside className={cn(

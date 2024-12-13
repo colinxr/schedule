@@ -55,12 +55,6 @@ export class ConversationApi extends ApiClient {
       baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api',
       headers: authService['defaultConfig'].headers,
     });
-
-    // Add request interceptor to log headers
-    this.addRequestInterceptor((config) => {
-      console.log('Request Headers:', config.headers);
-      return config;
-    });
   }
 
   public async getConversations(): Promise<ApiResponse<Conversation[]>> {

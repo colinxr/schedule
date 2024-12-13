@@ -15,9 +15,6 @@ interface ConversationListProps {
 export default function ConversationList({ onSelectConversation, selectedId }: ConversationListProps) {
   const { data: conversations, isLoading, error } = useConversations();
 
-  console.log(conversations);
-  
-
   if (isLoading) return <div className="p-4">Loading conversations...</div>;
   if (error) return <div className="p-4 text-red-500">Error loading conversations</div>;
 
