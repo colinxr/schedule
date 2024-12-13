@@ -1,86 +1,68 @@
-"use client";
+'use client';
 
-import { AuthForm } from "@/app/components/auth/AuthForm";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { z } from "zod";
-import Link from "next/link";
-import { useState } from "react";
-import { AuthService } from "@/services/auth/AuthService";
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ForgotPasswordPage() {
-  const [isEmailSent, setIsEmailSent] = useState(false);
-  const authService = AuthService.getInstance();
+  const { forgotPassword } = useAuth();
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleForgotPassword = async (data: z.infer<typeof forgotPasswordSchema>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await authService.forgotPassword(data);
-      setIsEmailSent(true);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error("Failed to send reset email");
+      await forgotPassword({ email });
+      setStatus('success');
+    } catch (err) {
+      setStatus('error');
     }
   };
 
-  if (isEmailSent) {
-    return (
-      <div className="w-full max-w-md">
-        <Alert className="bg-green-900/50 border-green-500/50 text-green-200">
-          <AlertDescription className="text-center">
-            If an account exists with that email address, you will receive password reset instructions.
-          </AlertDescription>
-        </Alert>
-        <div className="mt-4 text-center">
-          <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
-            Return to login
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full max-w-md space-y-4">
-      <AuthForm
-        title="Forgot Password"
-        description="Enter your email address and we'll send you instructions to reset your password."
-        schema={forgotPasswordSchema}
-        onSubmit={handleForgotPassword}
-        submitText="Send Reset Link"
-        footer={
-          <p className="text-gray-500">
-            Remember your password?{" "}
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
-              Sign in
-            </Link>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Reset your password</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Enter your email address and we'll send you a link to reset your password.
           </p>
-        }
-      >
-        <FormField
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input 
-                  type="email" 
-                  placeholder="john@example.com" 
-                  className="form-input"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage className="form-error" />
-            </FormItem>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {status === 'success' && (
+            <div className="text-green-500 text-sm text-center">
+              Check your email for password reset instructions.
+            </div>
           )}
-        />
-      </AuthForm>
+          
+          {status === 'error' && (
+            <div className="text-red-500 text-sm text-center">
+              Failed to send reset instructions. Please try again.
+            </div>
+          )}
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            Send Reset Instructions
+          </button>
+        </form>
+      </div>
     </div>
   );
 } 

@@ -9,6 +9,7 @@ export class ApiClient {
     this.baseURL = (config.baseURL || process.env.NEXT_PUBLIC_API_BASE_URL).replace(/\/$/, '');
     this.defaultConfig = {
       timeout: config.timeout || 10000,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

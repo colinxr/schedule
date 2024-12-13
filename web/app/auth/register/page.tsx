@@ -1,149 +1,136 @@
-"use client";
+'use client';
 
-import { AuthForm } from "@/app/components/auth/AuthForm";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { z } from "zod";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { AuthService } from "@/services/auth/AuthService";
-
-const registerSchema = z.object({
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
-  password: z.string()
-    .min(1, "Password is required")
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
-  password_confirmation: z.string().min(1, "Please confirm your password")
-}).refine((data) => data.password === data.password_confirmation, {
-  message: "Passwords do not match",
-  path: ["password_confirmation"]
-});
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const authService = AuthService.getInstance();
+  const { register } = useAuth();
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+  });
+  const [error, setError] = useState('');
 
-  const handleRegister = async (data: z.infer<typeof registerSchema>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.password !== formData.password_confirmation) {
+      setError('Passwords do not match');
+      return;
+    }
     try {
-      await authService.register({
-        ...data,
-        role: 'artist', // Set default role
-      });
-      
-      router.push("/auth/login?registered=true");
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error("Registration failed");
+      await register(formData);
+    } catch (err) {
+      setError('Registration failed');
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
   return (
-    <div className="w-full max-w-md space-y-4">
-      <AuthForm
-        title="Create an Account"
-        description="Sign up for an artist account"
-        schema={registerSchema}
-        onSubmit={handleRegister}
-        submitText="Register"
-        footer={
-          <p className="text-gray-500">
-            Already have an account?{" "}
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 text-sm hover:underline">
-              Sign in
-            </Link>
-          </p>
-        }
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            name="first_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="John" 
-                    className="form-input"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage className="form-error" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="last_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Doe" 
-                    className="form-input"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage className="form-error" />
-              </FormItem>
-            )}
-          />
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Create your account</h1>
         </div>
-        <FormField
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input 
-                  type="email" 
-                  placeholder="john@example.com" 
-                  className="form-input"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage className="form-error" />
-            </FormItem>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="text-red-500 text-sm text-center">{error}</div>
           )}
-        />
-        <FormField
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input 
-                  type="password" 
-                  className="form-input"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage className="form-error" />
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="password_confirmation"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
-              <FormControl>
-                <Input 
-                  type="password" 
-                  className="form-input"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage className="form-error" />
-            </FormItem>
-          )}
-        />
-      </AuthForm>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="first_name" className="block text-sm font-medium">
+                First Name
+              </label>
+              <input
+                id="first_name"
+                name="first_name"
+                type="text"
+                required
+                value={formData.first_name}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-medium">
+                Last Name
+              </label>
+              <input
+                id="last_name"
+                name="last_name"
+                type="text"
+                required
+                value={formData.last_name}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password_confirmation" className="block text-sm font-medium">
+              Confirm Password
+            </label>
+            <input
+              id="password_confirmation"
+              name="password_confirmation"
+              type="password"
+              required
+              value={formData.password_confirmation}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            Create Account
+          </button>
+        </form>
+      </div>
     </div>
   );
 } 

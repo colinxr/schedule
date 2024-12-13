@@ -1,10 +1,12 @@
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 
 interface ConversationCardProps {
   clientName: string
   lastMessage: string
   timestamp: string
+  status: 'pending' | 'active' | 'closed'
   isSelected?: boolean
   onClick?: () => void
   showSeparator?: boolean
@@ -14,10 +16,17 @@ export default function ConversationCard({
   clientName,
   lastMessage,
   timestamp,
+  status,
   isSelected = false,
   onClick,
   showSeparator = true,
 }: ConversationCardProps) {
+  const statusColors = {
+    pending: "bg-yellow-500",
+    active: "bg-green-500",
+    closed: "bg-gray-500"
+  };
+
   return (
     <>
       <div
@@ -27,13 +36,18 @@ export default function ConversationCard({
           isSelected && "bg-accent"
         )}
       >
-        <div className="flex justify-between items-start">
+        <div className="flex items-center justify-between mb-2">
           <span className="font-medium">{clientName}</span>
-          <span className="text-sm text-muted-foreground">{timestamp}</span>
+          <Badge variant="secondary" className={cn("text-xs", statusColors[status])}>
+            {status}
+          </Badge>
         </div>
-        <p className="text-sm text-muted-foreground truncate mt-1">
+        <p className="text-sm text-muted-foreground truncate mb-2">
           {lastMessage}
         </p>
+        <span className="text-xs text-muted-foreground">
+          {timestamp}
+        </span>
       </div>
       {showSeparator && <Separator />}
     </>
