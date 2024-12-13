@@ -2,6 +2,15 @@ import { ApiClient } from '../core/ApiClient';
 import { ApiResponse } from '../core/types';
 import { AuthService } from '../auth/AuthService';
 
+export interface Message {
+  id: number;
+  content: string;
+  sender_type: string;
+  sender_id: number;
+  created_at: string;
+  read_at: string | null;
+}
+
 export interface Conversation {
   id: number;
   artist_id: number;
@@ -31,21 +40,8 @@ export interface Conversation {
     instagram: string | null;
   };
   messages: {
-    id: number;
-    content: string;
-    sender_type: string;
-    sender_id: number;
-    created_at: string;
-    read_at: string | null;
-    data: {
-      id: number;
-      content: string;
-      sender_type: string;
-      sender_id: number;
-      created_at: string;
-      read_at: string | null;
-    }[];
-  }[];
+    data: Message[];
+  };
 }
 
 export class ConversationApi extends ApiClient {

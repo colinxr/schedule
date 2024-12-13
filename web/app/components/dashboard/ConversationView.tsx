@@ -17,6 +17,25 @@ interface ConversationViewProps {
   conversation: Conversation;
 }
 
+function MessageComponent({ message, isClient }: { message: Message; isClient: boolean }) {
+  return (
+    <div
+      className={`flex ${isClient ? 'justify-start' : 'justify-end'}`}
+    >
+      <div
+        className={`max-w-[80%] rounded-lg p-3 ${
+          isClient ? 'bg-accent' : 'bg-primary text-primary-foreground'
+        }`}
+      >
+        <p className="text-sm">{message.content}</p>
+        <span className="text-xs opacity-70 mt-1 block">
+          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ConversationView({ conversation }: ConversationViewProps) {
   return (
     <div className="flex-1 flex flex-col">
@@ -39,25 +58,11 @@ export default function ConversationView({ conversation }: ConversationViewProps
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {conversation.messages.data.map((message: Message) => (
-            <div
+            <MessageComponent
               key={message.id}
-              className={`flex ${
-                message.sender_id === conversation.client.id ? 'justify-start' : 'justify-end'
-              }`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.sender_id === conversation.client.id
-                    ? 'bg-accent'
-                    : 'bg-primary text-primary-foreground'
-                }`}
-              >
-                <p className="text-sm">{message.content}</p>
-                <span className="text-xs opacity-70 mt-1 block">
-                  {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                </span>
-              </div>
-            </div>
+              message={message}
+              isClient={message.sender_id === conversation.client.id}
+            />
           ))}
         </div>
       </ScrollArea>

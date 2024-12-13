@@ -53,7 +53,7 @@ class ConversationController extends Controller
             now()->addHour(),
             fn() => $conversation->client()
                 ->select('id', 'first_name', 'last_name', 'email')
-                ->with(['details:id,user_id,phone,instagram'])
+                ->with(['details:id,phone,instagram'])
                 ->first()
         );
 
