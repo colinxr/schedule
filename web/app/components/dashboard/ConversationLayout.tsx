@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import ConversationList from '@/app/components/dashboard/ConversationList';
 import ConversationView from '@/app/components/dashboard/ConversationView';
 import { Conversation, ConversationApi } from '@/services/api/ConversationApi';
-import { useConversationSelection } from '@/hooks/useConversationSelection';
+import { useOpenConversations } from '@/hooks/useConversationSelection';
 
 interface ConversationLayoutProps {
   initialConversationId?: number;
 }
 
 export default function ConversationLayout({ initialConversationId }: ConversationLayoutProps) {
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const setSelected = useConversationSelection((state) => state.setSelected);
+  const [openConversation, setOpenConversation] = useState<Conversation | null>(null);
+  const setSelected = useOpenConversations((state) => state.setOpen);
   const router = useRouter();
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function ConversationLayout({ initialConversationId }: Conversati
       const fetchConversation = async () => {
         try {
           const response = await new ConversationApi().getConversation(initialConversationId);
-          setSelectedConversation(response.data);
+          setOpenConversation(response.data);
         } catch (error) {
           console.error('Failed to fetch conversation:', error);
         }
@@ -32,7 +32,7 @@ export default function ConversationLayout({ initialConversationId }: Conversati
   }, [initialConversationId]);
 
   const handleConversationSelect = (conversation: Conversation) => {
-    setSelectedConversation(conversation);
+    setOpenConversation(conversation);
     setSelected(true);
     router.push(`/a/conversations/${conversation.id}`);
   };
@@ -42,15 +42,15 @@ export default function ConversationLayout({ initialConversationId }: Conversati
       {/* Left panel - Conversation List */}
       <div className="w-80 border-r">
         <ConversationList 
-          onSelectConversation={handleConversationSelect}
-          selectedId={selectedConversation?.id}
+          onOpenConversation={handleConversationSelect}
+          openId={openConversation?.id}
         />
       </div>
 
       {/* Right panel - Conversation Messages */}
       <div className="flex-1 flex flex-col">
-        {selectedConversation ? (
-          <ConversationView conversation={selectedConversation} />
+        {openConversation ? (
+          <ConversationView conversation={openConversation} />
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             Select a conversation to view messages

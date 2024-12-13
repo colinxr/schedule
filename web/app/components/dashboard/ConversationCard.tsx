@@ -7,7 +7,7 @@ interface ConversationCardProps {
   lastMessage: string
   timestamp: string
   status: 'pending' | 'active' | 'closed'
-  isSelected?: boolean
+  isOpen?: boolean
   onClick?: () => void
   showSeparator?: boolean
 }
@@ -17,7 +17,7 @@ export default function ConversationCard({
   lastMessage,
   timestamp,
   status,
-  isSelected = false,
+  isOpen = false,
   onClick,
   showSeparator = true,
 }: ConversationCardProps) {
@@ -33,7 +33,7 @@ export default function ConversationCard({
         onClick={onClick}
         className={cn(
           "p-4 hover:bg-accent cursor-pointer transition-colors",
-          isSelected && "bg-accent"
+          isOpen && "bg-accent"
         )}
       >
         <div className="flex items-center justify-between mb-2">

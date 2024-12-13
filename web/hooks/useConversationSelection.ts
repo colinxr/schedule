@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { ConversationSelectionStore } from '@/stores/conversationSelectionStore';
+import { OpenConversationStore } from '@/stores/openConversationStore';
 
-export const useConversationSelection = create<ConversationSelectionStore>((set) => ({
-  isSelected: false,
-  setSelected: (selected) => set({ isSelected: selected }),
+export const useOpenConversations = create<OpenConversationStore>((set) => ({
+  isOpen: false,
+  setOpen: (open) => set({ isOpen: open }),
 })); 

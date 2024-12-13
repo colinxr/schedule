@@ -3,7 +3,9 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Conversation } from "@/services/api/ConversationApi";
 import { formatDistanceToNow } from "date-fns";
+import { getTimestamp } from "@/lib/utils"
 import MessageForm from "./MessageForm";
+
 
 interface Message {
   id: number;
@@ -30,7 +32,7 @@ function MessageComponent({ message, isClient }: { message: Message; isClient: b
       >
         <p className="text-sm">{message.content}</p>
         <span className="text-xs opacity-70 mt-1 block">
-          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+          {getTimestamp(message.created_at)}
         </span>
       </div>
     </div>
@@ -46,7 +48,7 @@ export default function ConversationView({ conversation }: ConversationViewProps
           <div>
             <h2 className="font-semibold">{conversation.client.name}</h2>
             <p className="text-sm text-muted-foreground">
-              Started {formatDistanceToNow(new Date(conversation.created_at), { addSuffix: true })}
+              {/* Started {getTimestamp(conversation.created_at)} */}
             </p>
           </div>
           <div className="text-sm text-muted-foreground">
