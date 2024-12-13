@@ -13,11 +13,12 @@ interface ConversationLayoutProps {
 
 export default function ConversationLayout({ initialConversationId }: ConversationLayoutProps) {
   const [openConversation, setOpenConversation] = useState<Conversation | null>(null);
-  const setSelected = useOpenConversations((state) => state.setOpen);
+  const setOpen = useOpenConversations((state) => state.setOpen);
   const router = useRouter();
 
   useEffect(() => {
     if (initialConversationId) {
+      setOpen(true);
       const fetchConversation = async () => {
         try {
           const response = await new ConversationApi().getConversation(initialConversationId);
@@ -33,7 +34,7 @@ export default function ConversationLayout({ initialConversationId }: Conversati
 
   const handleConversationSelect = (conversation: Conversation) => {
     setOpenConversation(conversation);
-    setSelected(true);
+    setOpen(true);
     router.push(`/a/conversations/${conversation.id}`);
   };
 
