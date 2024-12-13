@@ -25,7 +25,7 @@ class MessageObserver
         }
 
         // Only notify the artist if the message is from the client
-        if ($message->sender_id === $message->conversation->client_id) {
+        if ($message->user_id === $message->conversation->client_id) {
             $message->conversation->artist->notify(new NewMessageNotification($message));
         }
     }

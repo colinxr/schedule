@@ -36,12 +36,9 @@ class MessageTest extends TestCase
 
         $message = Message::factory()
             ->for($conversation)
-            ->create([
-                'sender_type' => User::class,
-                'sender_id' => $sender->id
-            ]);
+            ->create([ 'user_id' => $sender->id ]);
 
-        $this->assertTrue($message->sender->is($sender));
+        $this->assertTrue($message->user->is($sender));
     }
 
     public function test_message_can_be_marked_as_read(): void

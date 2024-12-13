@@ -10,8 +10,7 @@ import MessageForm from "./MessageForm";
 interface Message {
   id: number;
   content: string;
-  sender_type: string;
-  sender_id: number;
+  user_id: number;
   created_at: string;
   read_at: string | null;
 }
@@ -64,7 +63,7 @@ export default function ConversationView({ conversation }: ConversationViewProps
             <MessageComponent
               key={message.id}
               message={message}
-              isClient={message.sender_id === conversation.client.id}
+              isClient={message.user_id === conversation.client.id}
             />
           ))}
         </div>

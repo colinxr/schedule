@@ -128,16 +128,14 @@ class ConversationNotificationTest extends TestCase
         Message::create([
             'conversation_id' => $conversation->id,
             'content' => 'Message from artist',
-            'sender_type' => User::class,
-            'sender_id' => $artist->id,
+            'user_id' => $artist->id,
         ]);
 
         // Create another message from client (should not notify client)
         Message::create([
             'conversation_id' => $conversation->id,
             'content' => 'Message from client',
-            'sender_type' => User::class,
-            'sender_id' => $client->id,
+            'user_id' => $client->id,
         ]);
 
         // Verify client never receives any type of notification

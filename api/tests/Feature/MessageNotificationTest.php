@@ -47,8 +47,7 @@ class MessageNotificationTest extends TestCase
         $message = Message::create([
             'conversation_id' => $conversation->id,
             'content' => 'Test message',
-            'sender_type' => User::class,
-            'sender_id' => $client->id,
+            'user_id' => $client->id,
         ]);
 
         // Load the conversation relationship with artist
@@ -94,8 +93,7 @@ class MessageNotificationTest extends TestCase
         Message::create([
             'conversation_id' => $conversation->id,
             'content' => 'Test message',
-            'sender_type' => User::class,
-            'sender_id' => $artist->id,
+            'user_id' => $artist->id,
         ]);
 
         Notification::assertNotSentTo($artist, NewMessageNotification::class);
@@ -132,8 +130,7 @@ class MessageNotificationTest extends TestCase
         $message = Message::create([
             'conversation_id' => $conversation->id,
             'content' => 'Test message content',
-            'sender_type' => User::class,
-            'sender_id' => $client->id,
+            'user_id' => $client->id,
         ]);
 
         // Load the conversation relationship with artist

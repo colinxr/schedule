@@ -31,16 +31,14 @@ class ConversationsTableSeeder extends Seeder
             // Initial client message
             [
                 'conversation_id' => $conversation->id,
-                'sender_type' => User::class,
-                'sender_id' => $conversation->client_id,
+                'user_id' => $conversation->client_id,
                 'content' => $this->generateTattooDescription(),
                 'created_at' => $conversation->created_at,
             ],
             // Artist response
             [
                 'conversation_id' => $conversation->id,
-                'sender_type' => User::class,
-                'sender_id' => $conversation->artist_id,
+                'user_id' => $conversation->artist_id,
                 'content' => fake()->randomElement([
                     "Thanks for reaching out! I'd love to help bring your vision to life. Could you share any reference images that inspire you?",
                     "Hey there! Thanks for your interest. Your idea sounds great, and I think it would work well with my style. When were you thinking of getting it done?",
@@ -51,8 +49,7 @@ class ConversationsTableSeeder extends Seeder
             // Client follow-up
             [
                 'conversation_id' => $conversation->id,
-                'sender_type' => User::class,
-                'sender_id' => $conversation->client_id,
+                'user_id' => $conversation->client_id,
                 'content' => fake()->randomElement([
                     "I'll gather some reference images and send them over. What's your availability like in the next few weeks?",
                     "Thanks for the quick response! I'm pretty flexible with timing. Do you have any openings next month?",

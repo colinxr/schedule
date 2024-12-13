@@ -42,8 +42,8 @@ class ConversationController extends Controller
             "conversation.{$conversation->id}.messages.page." . request('page', 1),
             now()->addMinute(),
             fn() => $conversation->messages()
-                ->select('id', 'conversation_id', 'content', 'created_at', 'read_at', 'sender_type', 'sender_id')
-                ->with(['sender:id,first_name,last_name'])
+                ->select('id', 'conversation_id', 'content', 'created_at', 'read_at', 'user_id')
+                ->with(['user:id,first_name,last_name'])
                 ->latest()
                 ->paginate(50)
         );

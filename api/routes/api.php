@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\WorkScheduleController;
 use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\Artist\ClientController;
+use App\Http\Controllers\Api\MessageController;
 
 
 /*
@@ -30,7 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Existing routes
     Route::get('conversations', [ConversationController::class, 'index']);
     Route::get('conversations/{conversation}', [ConversationController::class, 'show']);
-    
+    Route::post('conversations/{conversation}/messages', [MessageController::class, 'store']);
+
     Route::get('appointments', [AppointmentController::class, 'index']);
     Route::get('appointments/{appointment}', [AppointmentController::class, 'show']);
     Route::post('appointments', [AppointmentController::class, 'store']);

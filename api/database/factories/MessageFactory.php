@@ -18,8 +18,7 @@ class MessageFactory extends Factory
         return [
             'conversation_id' => Conversation::factory(),
             'content' => $this->faker->paragraph(),
-            'sender_type' => User::class,
-            'sender_id' => $sender->id,
+            'user_id' => $sender->id,
             'read_at' => $this->faker->optional()->dateTimeBetween('-1 week'),
             'created_at' => $this->faker->dateTimeBetween('-1 week'),
         ];

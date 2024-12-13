@@ -424,8 +424,7 @@ class ConversationControllerTest extends TestCase
                                 'content',
                                 'created_at',
                                 'read_at',
-                                'sender_type',
-                                'sender_id'
+                                'user_id'
                             ]
                         ],
                         'next_page_url',

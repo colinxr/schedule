@@ -42,7 +42,7 @@ class NewMessageNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $sender = $this->message->sender;
+        $sender = $this->message->user;
         return (new MailMessage)
             ->subject("New message from {$sender->name}")
             ->line("You have received a new message from {$sender->name}:")
@@ -60,7 +60,7 @@ class NewMessageNotification extends Notification implements ShouldQueue
         return [
             'message_id' => $this->message->id,
             'conversation_id' => $this->message->conversation_id,
-            'sender_id' => $this->message->sender_id,
+            'user_id' => $this->message->user_id,
             'content' => $this->message->content,
         ];
     }
@@ -73,7 +73,7 @@ class NewMessageNotification extends Notification implements ShouldQueue
         return new BroadcastMessage([
             'message_id' => $this->message->id,
             'conversation_id' => $this->message->conversation_id,
-            'sender_id' => $this->message->sender_id,
+            'user_id' => $this->message->user_id,
             'content' => $this->message->content,
         ]);
     }

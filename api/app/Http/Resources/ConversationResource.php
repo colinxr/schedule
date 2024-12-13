@@ -29,8 +29,7 @@ class ConversationResource extends JsonResource
                         'content' => $message->content,
                         'created_at' => $message->created_at,
                         'read_at' => $message->read_at,
-                        'sender_type' => $message->sender_type,
-                        'sender_id' => $message->sender_id,
+                        'user_id' => $message->user_id,
                     ]);
                 }),
                 'next_page_url' => $this->when(

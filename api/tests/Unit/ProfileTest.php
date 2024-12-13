@@ -109,8 +109,7 @@ class ProfileTest extends TestCase
         Message::create([
             'conversation_id' => $conversation->id,
             'content' => 'Test message',
-            'sender_type' => User::class,
-            'sender_id' => $client->id,
+            'user_id' => $client->id,
         ]);
 
         // Assert notification was not sent via email
