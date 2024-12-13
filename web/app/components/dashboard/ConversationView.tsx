@@ -3,6 +3,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Conversation } from "@/services/api/ConversationApi";
 import { formatDistanceToNow } from "date-fns";
+import MessageForm from "./MessageForm";
 
 interface Message {
   id: number;
@@ -66,6 +67,8 @@ export default function ConversationView({ conversation }: ConversationViewProps
           ))}
         </div>
       </ScrollArea>
+
+      <MessageForm />
     </div>
   );
 } 
