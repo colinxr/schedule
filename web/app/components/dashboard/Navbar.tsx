@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ChevronRight, LayoutDashboard, Settings, FolderKanban } from "lucide-react";
+import { useOpenConversations } from '@/hooks/useConversationSelection';
+import { OpenConversationStore } from '@/stores/openConversationStore';
 
 const navigation = [
   { name: 'Dashboard', href: '/a', icon: LayoutDashboard },
@@ -12,37 +14,32 @@ const navigation = [
   { name: 'Settings', href: '/a/settings', icon: Settings },
 ];
 
-interface NavbarProps {
-  onConversationSelected?: boolean;
-}
-
-export default function Navbar({ onConversationSelected = false }: NavbarProps) {
+export default function Navbar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(true);
+  const isConversationRoute = /\/conversations\/\w+/.test(pathname || '');
+  const isStoreOpen = useOpenConversations((state: OpenConversationStore) => state.isOpen);
   
-  // Handle initial state based on screen size and conversation selection
+  const defaultState = isConversationRoute || window.innerWidth < 768 ? false : true;
+  const [isOpen, setIsOpen] = useState(defaultState);
+  
+  // Add effect to handle store changes
+  useEffect(() => {
+    if (isStoreOpen) {
+      setIsOpen(false);
+    }
+  }, [isStoreOpen]);
+
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsOpen(false);
-      } else if (window.innerWidth >= 1024 && !onConversationSelected) {
-        setIsOpen(true);
-      }
+      const isConversationRoute = /\/conversations\/\w+/.test(pathname || '');
+      const newState = isConversationRoute || window.innerWidth < 768 ? false : true;
+      setIsOpen(newState);
     };
     
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [onConversationSelected]);
-
-  // Collapse when conversation is selected
-  useEffect(() => {
-    console.log('onConversationSelected', onConversationSelected);
-    
-    if (onConversationSelected) {
-      setIsOpen(false);
-    }
-  }, [onConversationSelected]);
+  }, [pathname]);
 
   return (
     <aside className={cn(
